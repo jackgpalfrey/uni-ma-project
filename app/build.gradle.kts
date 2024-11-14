@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -56,4 +57,15 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Jetpack Compose core libraries
+    implementation(libs.ui)                // Compose UI library
+    implementation(libs.androidx.material)     // Material design library
+    implementation(libs.ui.tooling.preview) // Tooling for previews
+
+    // Navigation for Jetpack Compose
+    implementation(libs.androidx.navigation.compose.v250) // Navigation library for Compose
+
+    // Activity Compose for setting Compose content in Activities
+    implementation(libs.androidx.activity.compose.v160)
 }
