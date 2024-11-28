@@ -1,4 +1,4 @@
-package com.example.weatherapplication
+package com.example.weatherapplication.nav
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -11,9 +11,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.weatherapplication.Views
+import com.example.weatherapplication.screens.ForecastScreen
 import com.example.weatherapplication.screens.HomeScreen
 import com.example.weatherapplication.screens.MapScreen
-import com.example.weatherapplication.screens.PlacesScreen
 
 @Composable
 fun BottomNavigationBar() {
@@ -65,8 +66,8 @@ fun BottomNavigationBar() {
                     navController
                 )
             }
-            composable(Views.Places.route) {
-                PlacesScreen(
+            composable(Views.Forecast.route) {
+                ForecastScreen(
                     navController
                 )
             }

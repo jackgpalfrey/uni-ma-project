@@ -1,10 +1,11 @@
-package com.example.weatherapplication
+package com.example.weatherapplication.nav
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.weatherapplication.Views
 
 data class BottomNavigationItem(
     val label : String = "",
@@ -20,13 +21,13 @@ data class BottomNavigationItem(
             ),
             BottomNavigationItem(
                 label = "Map",
-                icon = Icons.Filled.Search,
+                icon = Icons.Filled.LocationOn,
                 route = Views.Map.route
             ),
             BottomNavigationItem(
-                label = "Places",
-                icon = Icons.Filled.AccountCircle,
-                route = Views.Places.route
+                label = "Forecast",
+                icon = Icons.Filled.DateRange,
+                route = Views.Forecast.route
             ),
         )
     }

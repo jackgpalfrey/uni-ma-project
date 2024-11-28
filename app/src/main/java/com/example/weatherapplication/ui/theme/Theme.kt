@@ -34,6 +34,10 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+// We want Dark Theme app!
+// We want Dark Theme app!
+// We want Dark Theme app!
+
 @Composable
 fun MyCustomTheme(
     darkTheme: Boolean = false, // Or use isSystemInDarkTheme() if you want automatic dark mode
