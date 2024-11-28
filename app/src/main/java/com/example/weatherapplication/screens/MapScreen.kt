@@ -5,6 +5,9 @@ import androidx.navigation.NavController
 import com.example.weatherapplication.maps.SimpleMap
 
 @Composable
-fun MapScreen(navController: NavController) {
-    SimpleMap()
+fun MapScreen(navController: NavController, userLatitude: Double, userLongitude: Double) {
+    val lat: Double = userLatitude
+    val lon: Double = userLongitude
+
+    SimpleMap(lat, lon)
 }

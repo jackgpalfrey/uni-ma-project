@@ -17,7 +17,7 @@ import com.example.weatherapplication.screens.HomeScreen
 import com.example.weatherapplication.screens.MapScreen
 
 @Composable
-fun BottomNavigationBar() {
+fun BottomNavigationBar(userLatitude: Double, userLongitude: Double) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -56,6 +56,7 @@ fun BottomNavigationBar() {
             navController = navController,
             startDestination = Views.Home.route,
             modifier = Modifier.padding(paddingValues = paddingValues)) {
+
             composable(Views.Home.route) {
                 HomeScreen(
                     navController
@@ -63,7 +64,9 @@ fun BottomNavigationBar() {
             }
             composable(Views.Map.route) {
                 MapScreen(
-                    navController
+                    navController,
+                    userLatitude,
+                    userLongitude
                 )
             }
             composable(Views.Forecast.route) {
