@@ -1,23 +1,29 @@
 package com.example.weatherapplication
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import com.example.weatherapplication.api.RetrofitClient
 import com.example.weatherapplication.api.WeatherResponse
-import com.example.weatherapplication.location.UserLocationProvider
 import com.example.weatherapplication.nav.BottomNavigationBar
 import com.example.weatherapplication.ui.theme.MyCustomTheme
+import com.google.android.gms.location.LocationServices
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -28,18 +34,10 @@ sealed class Views(val route : String) {
     data object Forecast : Views("forecast_route")
 }
 
-class MainActivity : ComponentActivity() {
-    private val locationPermissionRequest =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                // Permission granted, access location
-                getUserLocation()
-            } else {
-                // Permission denied, show a message to the user
-                Toast.makeText(this, "Location permission denied...", Toast.LENGTH_SHORT).show()
-            }
-        }
+var userLatitude: Double? = null
+var userLongitude: Double? = null
 
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -48,30 +46,6 @@ class MainActivity : ComponentActivity() {
             MyCustomTheme {
                 MainScreen()
             }
-        }
-    }
-
-    private fun isLocationPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestLocationPermission() {
-        locationPermissionRequest.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
-
-    private fun getUserLocation() {
-        // Initialize and use UserLocationProvider
-        val userLocationProvider = UserLocationProvider(this)
-        val latitude = userLocationProvider.latitude
-        val longitude = userLocationProvider.longitude
-
-        if (latitude != null && longitude != null) {
-            Toast.makeText(this, "Lat: $latitude, Long: $longitude", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(this, "Unable to fetch location...", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -101,7 +75,49 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+fun GetUserLocation(context: Context) {
+    val fusedLocationProviderClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+    val locationPermissionState = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                throw SecurityException("Not granted.")
+            }
+            fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    userLatitude = location.latitude
+                    userLongitude = location.longitude
+                    Log.d("UserLocation", "Lat: $userLatitude, Long: $userLongitude")
+                } else {
+                    Log.d("UserLocation", "Location is null")
+                }
+            }
+        } else {
+            Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        locationPermissionState.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+}
+
+@Composable
 fun MainScreen() {
+    val context = LocalContext.current
+
+    GetUserLocation(context)
+
     // A surface container using the 'background' color from the theme
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BottomNavigationBar()

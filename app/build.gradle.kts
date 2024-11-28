@@ -75,6 +75,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
 
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
     // Jetpack Compose core libraries
     implementation(libs.ui)                // Compose UI library
     implementation(libs.androidx.material)     // Material design library
