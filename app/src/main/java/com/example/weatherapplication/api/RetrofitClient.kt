@@ -7,7 +7,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 object RetrofitClient {
-    private const val API_URL = "https://api.openweathermap.org/data/2.5/weather?"
+    private const val API_URL = "https://api.openweathermap.org/"
 
     val weatherService: WeatherService by lazy {
         Retrofit.Builder()

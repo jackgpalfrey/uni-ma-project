@@ -41,6 +41,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        fetchWeather(-90.00, 90.00)
+
         // Set Screen content
         setContent {
             MyCustomTheme {
@@ -60,15 +62,15 @@ class MainActivity : ComponentActivity() {
                 if (response.isSuccessful) {
                     val weatherResponse = response.body()
                     weatherResponse?.let {
-                        println("Weather: ${it.weather[0].description}, Temp: ${it.main.temp}")
+                        Log.d("Weather", "Description: ${it.weather[0].description}, Temp: ${it.main.temp}")
                     }
                 } else {
-                    println("Error: ${response.code()}")
+                    Log.e("Weather", "Error: ${response.code()}")
                 }
             }
 
             override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
-                println("Failed to fetch weather: ${t.message}")
+                Log.e("Weather", "Failed to fetch weather: ${t.message}")
             }
         })
     }
