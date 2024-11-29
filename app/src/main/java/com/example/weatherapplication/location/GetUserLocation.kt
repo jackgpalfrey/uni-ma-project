@@ -14,10 +14,11 @@ import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.LocationServices
 
 @Composable
-fun GetUserLocation(context: Context, param: (Any, Any) -> Unit) {
+fun GetUserLocation(context: Context, onLocationAvailable: (Double, Double) -> Unit) {
     val fusedLocationProviderClient = remember {
         LocationServices.getFusedLocationProviderClient(context)
     }
+
     val locationPermissionState = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -25,27 +26,33 @@ fun GetUserLocation(context: Context, param: (Any, Any) -> Unit) {
             if (ActivityCompat.checkSelfPermission(
                     context,
                     Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
                     context,
                     Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
+                ) == PackageManager.PERMISSION_GRANTED
             ) {
-                throw SecurityException("Not granted.")
-            }
-            fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    val userLatitude = location.latitude
-                    val userLongitude = location.longitude
-                    Log.d("UserLocation", "Lat: $userLatitude, Long: $userLongitude")
-                } else {
-                    Log.d("UserLocation", "Location is null")
+                fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        val userLatitude = location.latitude
+                        val userLongitude = location.longitude
+
+                        Log.d("UserLocation", "Lat: $userLatitude, Long: $userLongitude")
+
+                        // Call the callback function with the retrieved latitude and longitude
+                        onLocationAvailable(userLatitude, userLongitude)
+                    } else {
+                        Log.d("UserLocation", "Location is null")
+                    }
                 }
+            } else {
+                throw SecurityException("Location permission not granted.")
             }
         } else {
             Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
         }
     }
 
+    // Launch the permission request when the composable is first recomposed
     LaunchedEffect(Unit) {
         locationPermissionState.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }

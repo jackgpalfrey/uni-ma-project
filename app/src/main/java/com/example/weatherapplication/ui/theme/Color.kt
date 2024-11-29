@@ -2,7 +2,7 @@ package com.example.weatherapplication.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val CustomPrimaryColor = Color(0xFFFFC107) // Replace with your desired primary color
+val CustomPrimaryColor = Color(0xFFFFA6A6) // Replace with your desired primary color
 val CustomPrimaryVariant = Color(0xFF3700B3)
 val CustomSecondaryColor = Color(0xFF03DAC5)
 

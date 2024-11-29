@@ -1,5 +1,6 @@
 package com.example.weatherapplication.maps
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -9,11 +10,13 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 
 @Composable
 fun SimpleMap(lat: Double, lon: Double) {
+    Log.d("SimpleMap", "Lat: $lat, Long: $lon")
+
     MapboxMap(
         Modifier.fillMaxSize(),
         mapViewportState = rememberMapViewportState {
             setCameraOptions {
-                zoom(10.0)
+                zoom(3.0)
                 center(Point.fromLngLat(lat, lon))
                 pitch(0.0)
                 bearing(0.0)

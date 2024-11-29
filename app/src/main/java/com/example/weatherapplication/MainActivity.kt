@@ -1,17 +1,22 @@
 package com.example.weatherapplication
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.example.weatherapplication.api.WeatherHandler
 import com.example.weatherapplication.api.WeatherResponse
+import com.example.weatherapplication.components.CircularIndicator
 import com.example.weatherapplication.location.GetUserLocation
 import com.example.weatherapplication.nav.BottomNavigationBar
 import com.example.weatherapplication.ui.theme.MyCustomTheme
@@ -39,33 +44,44 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
 
     // State to track latitude, longitude, and whether location is available
-    var userLatitude by remember { mutableDoubleStateOf(0.0) }
-    var userLongitude by remember { mutableDoubleStateOf(0.0) }
+    var userLatitude by remember { mutableDoubleStateOf(0.00) }
+    var userLongitude by remember { mutableDoubleStateOf(0.00) }
 
-    // Trigger the location fetching
+    // Get user location
     GetUserLocation(context) { latitude, longitude ->
-        userLatitude = latitude as Double
-        userLongitude = longitude as Double
+        userLatitude = latitude
+        userLongitude = longitude
     }
+
+    // Track states
+    var isLoading by mutableStateOf(true)
+    var weatherData: WeatherResponse? by mutableStateOf(null)
 
     // Trigger weather API call when location is available
     LaunchedEffect(userLatitude, userLongitude) {
-        val lat = userLatitude
-        val lon = userLongitude
+        if (userLatitude == 0.00 && userLongitude == 0.00) {
+            // Debugging message
+            Log.e("Weather", "Error, longitude and latitude are 0.00")
+            return@LaunchedEffect
+        }
 
         val weatherHandler = WeatherHandler("f129e0a6aafbd7ec0c71ed808a7b7b53")
-        weatherHandler.fetchWeather(lat, lon, object : WeatherHandler.WeatherCallback {
+        weatherHandler.fetchWeather(userLatitude, userLongitude, object : WeatherHandler.WeatherCallback {
             override fun onSuccess(weatherResponse: WeatherResponse) {
-                Log.d("Weather", "Weather: ${weatherResponse.weather}")
+                weatherData = weatherResponse
+                Log.d("Weather","Data: $weatherData")
+                isLoading = false
             }
 
             override fun onError(errorMessage: String) {
                 Log.e("Weather", "Error fetching weather: $errorMessage")
+                isLoading = false
             }
         })
     }
@@ -74,6 +90,11 @@ fun MainScreen() {
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        BottomNavigationBar(userLatitude, userLongitude)
+        // Parse some important information
+        BottomNavigationBar(
+            isLoading,
+            weatherData,
+            userLatitude,
+            userLongitude)
     }
 }

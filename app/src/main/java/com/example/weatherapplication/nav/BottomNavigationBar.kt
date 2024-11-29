@@ -12,12 +12,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.weatherapplication.Views
+import com.example.weatherapplication.api.WeatherResponse
 import com.example.weatherapplication.screens.ForecastScreen
 import com.example.weatherapplication.screens.HomeScreen
 import com.example.weatherapplication.screens.MapScreen
 
 @Composable
-fun BottomNavigationBar(userLatitude: Double, userLongitude: Double) {
+fun BottomNavigationBar(isLoading: Boolean, weatherData: WeatherResponse?, userLatitude: Double, userLongitude: Double) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -58,21 +59,17 @@ fun BottomNavigationBar(userLatitude: Double, userLongitude: Double) {
             modifier = Modifier.padding(paddingValues = paddingValues)) {
 
             composable(Views.Home.route) {
-                HomeScreen(
-                    navController
-                )
+                if (weatherData != null) {
+                    HomeScreen(
+                        isLoading,
+                        weatherData)
+                }
             }
             composable(Views.Map.route) {
-                MapScreen(
-                    navController,
-                    userLatitude,
-                    userLongitude
-                )
+                MapScreen(userLatitude, userLongitude)
             }
             composable(Views.Forecast.route) {
-                ForecastScreen(
-                    navController
-                )
+                ForecastScreen()
             }
         }
     }
