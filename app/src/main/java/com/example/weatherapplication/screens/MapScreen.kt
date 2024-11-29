@@ -7,6 +7,5 @@ import com.example.weatherapplication.maps.SimpleMap
 fun MapScreen(userLatitude: Double, userLongitude: Double) {
     val lat: Double = userLatitude
     val lon: Double = userLongitude
-
     SimpleMap(lat, lon)
 }

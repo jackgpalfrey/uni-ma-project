@@ -17,7 +17,8 @@ fun SimpleMap(lat: Double, lon: Double) {
         mapViewportState = rememberMapViewportState {
             setCameraOptions {
                 zoom(3.0)
-                center(Point.fromLngLat(lat, lon))
+                // Corrected: Longitude (lon) should come first, Latitude (lat) second
+                center(Point.fromLngLat(lon, lat))
                 pitch(0.0)
                 bearing(0.0)
             }

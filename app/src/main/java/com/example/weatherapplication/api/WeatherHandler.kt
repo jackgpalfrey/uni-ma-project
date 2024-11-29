@@ -11,11 +11,12 @@ import retrofit2.Response
  *  while the caller handles UI or further processing.
  *
  */
-class WeatherHandler(private val apiKey: String) {
+private const val API_KEY: String = "f129e0a6aafbd7ec0c71ed808a7b7b53"
 
+class WeatherHandler {
     // Fetches weather data for a given latitude and longitude
     fun fetchWeather(lat: Double, lon: Double, callback: WeatherCallback) {
-        val call = RetrofitClient.weatherService.getCurrentWeather(lat, lon, apiKey)
+        val call = RetrofitClient.weatherService.getCurrentWeather(lat, lon, API_KEY)
 
         call.enqueue(object : Callback<WeatherResponse> {
             override fun onResponse(

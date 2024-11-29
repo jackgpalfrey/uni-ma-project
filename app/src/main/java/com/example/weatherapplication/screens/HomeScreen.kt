@@ -13,37 +13,28 @@ import com.example.weatherapplication.api.WeatherResponse
 import com.example.weatherapplication.ui.theme.MyCustomTheme
 
 @Composable
-fun HomeScreen(isLoading: Boolean, weatherData: WeatherResponse) {
+fun HomeScreen(weatherData: WeatherResponse) {
     MyCustomTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Loading indicator
-                    CircularProgressIndicator()
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(15.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        weatherData.name,
-                        style = MaterialTheme.typography.displaySmall,
-                        modifier = Modifier.padding(vertical = 10.dp)
-                    )
-                    Text(
-                        "Data: " + weatherData.weather[0].description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
-                    )
-                    /*
+            Column(
+                modifier = Modifier.fillMaxSize().padding(15.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    weatherData.name,
+                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier.padding(vertical = 10.dp)
+                )
+                Text(
+                    "Data: " + weatherData.weather[0].description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+                /*
                     Button(
                         onClick = { /* Do something! */ },
                         contentPadding = ButtonDefaults.ButtonWithIconContentPadding
@@ -62,7 +53,6 @@ fun HomeScreen(isLoading: Boolean, weatherData: WeatherResponse) {
                             .padding(horizontal = 0.dp, vertical = 0.dp)
                             .clip(MaterialTheme.shapes.large)
                     )*/
-                }
             }
         }
     }
