@@ -1,6 +1,5 @@
 package com.example.weatherapplication.nav
 
-import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
@@ -66,7 +65,7 @@ fun BottomNavigationBar(weatherData: WeatherResponse, userLongitude: Double, use
                 MapScreen(userLongitude, userLatitude)
             }
             composable(Views.Forecast.route) {
-                ForecastScreen()
+                ForecastScreen(weatherData) // No data passed since ForecastScreen fetches its own data
             }
         }
     }
