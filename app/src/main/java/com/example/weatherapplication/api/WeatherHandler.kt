@@ -1,5 +1,6 @@
 package com.example.weatherapplication.api
 
+import android.util.Log
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -25,6 +26,7 @@ class WeatherHandler {
             ) {
                 if (response.isSuccessful) {
                     val weatherResponse = response.body()
+                    Log.d("Raw Weather", weatherResponse.toString())
                     if (weatherResponse != null) {
                         callback.onSuccess(weatherResponse)
                     } else {

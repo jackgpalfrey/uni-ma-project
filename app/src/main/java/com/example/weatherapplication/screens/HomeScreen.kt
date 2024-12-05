@@ -2,8 +2,6 @@ package com.example.weatherapplication.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -12,7 +10,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.weatherapplication.api.WeatherResponse
 import com.example.weatherapplication.ui.theme.MyCustomTheme
@@ -36,7 +33,7 @@ fun HomeScreen(weatherData: WeatherResponse) {
                 SearchBar(
                     modifier = Modifier.fillMaxWidth(),
                     query = text,
-                    placeholder = { Text("Search for places...") },
+                    placeholder = { Text(weatherData.name) },
                     onQueryChange = { text = it },
                     onSearch = { active = false },
                     active = active,
@@ -67,7 +64,43 @@ fun HomeScreen(weatherData: WeatherResponse) {
                     modifier = Modifier.padding(vertical = 10.dp)
                 )
                 Text(
-                    "Data: " + weatherData.weather[0].description,
+                    "Description: " + weatherData.weather[0].description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+                Text(
+                    "Temp: " + weatherData.main.temp + "°C feels like " + weatherData.main.feels_like + "°C",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+
+                Text(
+                    "" + weatherData.main.temp_min + "°C - " + weatherData.main.temp_max + "°C",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+                Text(
+                    "Humidity: " + weatherData.main.humidity + "%",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+                Text(
+                    "Pressure: " + weatherData.main.pressure + "mBar",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+                Text(
+                    "Wind: " + weatherData.wind.deg + " at " + weatherData.wind.speed + "kts, gusting " + weatherData.wind.gust + "kts",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+                Text(
+                    "Sunrise: " + weatherData.sys.sunrise + ", Sunset: " + weatherData.sys.sunset,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
+                )
+                Text(
+                    "Data: " + weatherData,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp)
                 )
