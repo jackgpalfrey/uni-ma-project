@@ -16,12 +16,13 @@ fun SimpleMap(lat: Double, lon: Double) {
         Modifier.fillMaxSize(),
         mapViewportState = rememberMapViewportState {
             setCameraOptions {
-                zoom(3.0)
-                // Corrected: Longitude (lon) should come first, Latitude (lat) second
+                zoom(7.0)
                 center(Point.fromLngLat(lon, lat))
                 pitch(0.0)
                 bearing(0.0)
             }
         },
-    )
+    ) {
+
+    }
 }
