@@ -1,6 +1,5 @@
 package com.example.weatherapplication.nav
 
-import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
@@ -14,12 +13,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.weatherapplication.Views
 import com.example.weatherapplication.api.WeatherResponse
+import com.example.weatherapplication.api.AirQualityResponse
 import com.example.weatherapplication.screens.ForecastScreen
 import com.example.weatherapplication.screens.HomeScreen
 import com.example.weatherapplication.screens.MapScreen
 
 @Composable
-fun BottomNavigationBar(weatherData: WeatherResponse, userLongitude: Double, userLatitude: Double) {
+fun BottomNavigationBar(weatherData: WeatherResponse, airData: AirQualityResponse, userLongitude: Double, userLatitude: Double) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -60,7 +60,7 @@ fun BottomNavigationBar(weatherData: WeatherResponse, userLongitude: Double, use
             modifier = Modifier.padding(paddingValues = paddingValues)) {
 
             composable(Views.Home.route) {
-                HomeScreen(weatherData)
+                HomeScreen(weatherData, airData)
             }
             composable(Views.Map.route) {
                 MapScreen(userLongitude, userLatitude)

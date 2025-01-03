@@ -41,8 +41,39 @@ class WeatherHandler {
         })
     }
 
+    fun fetchAirQuality(lat: Double, lon: Double, callback: AirQualityCallback) {
+        val call = RetrofitClient.weatherService.getAirPollution(lat, lon, API_KEY)
+
+        call.enqueue(object : Callback<AirQualityResponse> {
+            override fun onResponse(
+                call: Call<AirQualityResponse>,
+                response: Response<AirQualityResponse>
+            ) {
+                if (response.isSuccessful) {
+                    val airQualityResponse = response.body()
+                    if (airQualityResponse != null) {
+                        callback.onSuccess(airQualityResponse)
+                    } else {
+                        callback.onError("Empty response from server.")
+                    }
+                } else {
+                    callback.onError("Error: ${response.code()}")
+                }
+            }
+
+            override fun onFailure(call: Call<AirQualityResponse>, t: Throwable) {
+                callback.onError("Failed to fetch air quality: ${t.message}")
+            }
+        })
+    }
+
     interface WeatherCallback {
         fun onSuccess(weatherResponse: WeatherResponse)
+        fun onError(errorMessage: String)
+    }
+
+    interface AirQualityCallback {
+        fun onSuccess(airQualityResponse: AirQualityResponse)
         fun onError(errorMessage: String)
     }
 }

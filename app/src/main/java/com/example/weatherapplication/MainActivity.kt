@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.weatherapplication.api.WeatherHandler
 import com.example.weatherapplication.api.WeatherResponse
+import com.example.weatherapplication.api.AirQualityResponse
 import com.example.weatherapplication.location.GetUserLocation
 import com.example.weatherapplication.nav.BottomNavigationBar
 import com.example.weatherapplication.ui.theme.MyCustomTheme
@@ -63,20 +64,37 @@ fun MainScreen() {
 
     // State to track loading and weather data
     var isLoading by remember { mutableStateOf(true) }
+
+    // Data
     var weatherData: WeatherResponse? by remember { mutableStateOf(null) }
+    var airData: AirQualityResponse? by remember { mutableStateOf(null) }
 
     // Function to fetch weather
-    fun fetchWeather(lat: Double, long: Double) {
+    fun fetchWeatherAndAirQuality(lat: Double, long: Double) {
         isLoading = true
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val weatherHandler = WeatherHandler()
 
+                // Fetch weather
                 weatherHandler.fetchWeather(lat, long, object : WeatherHandler.WeatherCallback {
                     override fun onSuccess(weatherResponse: WeatherResponse) {
                         weatherData = weatherResponse
-                        Log.d("Weather","Data: $weatherData")
-                        isLoading = false
+                        
+                        // After weather success, fetch air quality
+                        weatherHandler.fetchAirQuality(lat, long, object : WeatherHandler.AirQualityCallback {
+                            override fun onSuccess(airQualityResponse: AirQualityResponse) {
+                                airData = airQualityResponse
+
+                                Log.d("Debug", "Weather Data: $weatherData, Air Data: $airData, Location: $userLatitude, $userLongitude")
+                                isLoading = false
+                            }
+
+                            override fun onError(errorMessage: String) {
+                                Log.e("AirQuality", "Error fetching air quality: $errorMessage")
+                                isLoading = false
+                            }
+                        })
                     }
 
                     override fun onError(errorMessage: String) {
@@ -85,8 +103,7 @@ fun MainScreen() {
                     }
                 })
             } catch (e: Exception) {
-                Log.e("Weather", "Error fetching weather: ${e.message}")
-            } finally {
+                Log.e("Weather", "Error fetching data: ${e.message}")
                 isLoading = false
             }
         }
@@ -104,10 +121,10 @@ fun MainScreen() {
         color = MaterialTheme.colorScheme.background
     ) {
         when {
-            weatherData != null -> {
+            weatherData != null && airData != null -> {
                 // Parse weatherData, lat, lon to navigation bar so can reuse it on screen components.
 
-                BottomNavigationBar(weatherData!!, userLatitude, userLongitude)
+                BottomNavigationBar(weatherData!!, airData!!, userLatitude, userLongitude)
             }
             else -> {
                 // Show an error message if weather data is not available
@@ -137,7 +154,7 @@ fun MainScreen() {
     LaunchedEffect(locationAvailable) {
         if (locationAvailable) {
             isLoading = true
-            fetchWeather(userLatitude, userLongitude)
+            fetchWeatherAndAirQuality(userLatitude, userLongitude)
         }
     }
 }

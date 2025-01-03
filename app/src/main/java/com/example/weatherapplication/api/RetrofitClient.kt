@@ -26,4 +26,11 @@ interface WeatherService {
         @Query("lon") longitude: Double,
         @Query("appid") apiKey: String
     ): Call<WeatherResponse>
+
+    @GET("data/2.5/air_pollution")
+    fun getAirPollution(
+        @Query("lat") latitude: Double,
+        @Query("lon") longitude: Double,
+        @Query("appid") apiKey: String
+    ): Call<AirQualityResponse>
 }
