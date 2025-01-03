@@ -31,6 +31,7 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Top,
             ) {
+                /*
                 var text by rememberSaveable { mutableStateOf("") }
                 var active by rememberSaveable { mutableStateOf(false) }
 
@@ -55,7 +56,7 @@ fun HomeScreen(
                             // Search result
                         }
                     }
-                }
+                }*/
             }
             Column(
                 modifier = Modifier.fillMaxSize().padding(15.dp),
