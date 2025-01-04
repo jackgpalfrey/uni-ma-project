@@ -1,6 +1,7 @@
 package com.example.weatherapplication.api
 
 import com.example.weatherapplication.api.responses.AirQualityResponse
+import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -26,13 +27,23 @@ interface WeatherService {
     fun getCurrentWeather(
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
-        @Query("appid") apiKey: String
+        @Query("appid") apiKey: String,
+        @Query("units") units: String = "metric"
     ): Call<WeatherResponse>
 
     @GET("data/2.5/air_pollution")
     fun getAirPollution(
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
-        @Query("appid") apiKey: String
+        @Query("appid") apiKey: String,
+        @Query("units") units: String = "metric"
     ): Call<AirQualityResponse>
+
+    @GET("data/2.5/forecast")
+    fun getFiveDayForecast(
+        @Query("lat") latitude: Double,
+        @Query("lon") longitude: Double,
+        @Query("appid") apiKey: String,
+        @Query("units") units: String = "metric"
+    ): Call<WeatherForecastResponse>
 }
