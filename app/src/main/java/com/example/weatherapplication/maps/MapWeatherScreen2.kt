@@ -1,6 +1,7 @@
 package com.example.weatherapplication.maps
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -37,6 +41,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
+import com.mapbox.maps.extension.style.layers.Layer
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.rasterLayer
 import com.mapbox.maps.extension.style.sources.addSource
@@ -57,43 +62,20 @@ import java.time.format.DateTimeParseException
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.exp
 
-val layerTypes = listOf(
-    LayerType("PAC0", "Convective precipitation", "mm"),
-    LayerType("PR0", "Precipitation intensity", "mm/s"),
-    LayerType("PA0", "Accumulated precipitation", "mm"),
-    LayerType("PAR0", "Accumulated precipitation - rain", "mm"),
-    LayerType("PAS0", "Accumulated precipitation - snow", "mm"),
-    LayerType("SD0", "Depth of snow", "m"),
-    LayerType("WS10", "Wind speed at an altitude of 10 meters", "m/s"),
-    LayerType("WND", "Joint display of speed wind (color) and wind direction (arrows), received by U and V components", "m/s"),
-    LayerType("APM", "Atmospheric pressure on mean sea level", "hPa"),
-    LayerType("TA2", "Air temperature at a height of 2 meters", "°C"),
-    LayerType("TD2", "Temperature of a dew point", "°C"),
-    LayerType("TS0", "Soil temperature 0-10 cm", "K"),
-    LayerType("TS10", "Soil temperature >10 cm", "K"),
-    LayerType("HRD0", "Relative humidity", "%"),
-    LayerType("CL", "Cloudiness", "%")
-)
-
-data class LayerType(
-    val code: String,
-    val description: String,
-    val unit: String
-): Serializable
+// Should be hidden away bad practice!
+const val API_KEY = "af95979eb6688d114fe2358eed5793bd"
 
 @Composable
 fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
-
     // Location
     var lat by remember { mutableDoubleStateOf(userLatitude) }
     var lon by remember { mutableDoubleStateOf(userLongitude) }
 
-    // Map
+    // MapView
     var mapView by remember { mutableStateOf<MapView?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    var selectedLayer by rememberSaveable { mutableStateOf(layerTypes[3]) }
-    var expanded by rememberSaveable { mutableStateOf(false) }
 
     // Slider
     var currentTimeUnix by rememberSaveable { mutableLongStateOf(System.currentTimeMillis() / 1000L) }
@@ -104,42 +86,21 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
         currentTimeUnix = System.currentTimeMillis() / 1000L
     }
 
+    // Select Default Map overlay
+    var selectedItem by rememberSaveable { mutableStateOf<LayerType>(layerTypes[0]) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Dropdown Menu
-        Row {
-            Box {
-                TextField(
-                    value = selectedLayer.description,
-                    onValueChange = { /* Do nothing here */ },
-                    label = { Text("Select Type") },
-                    modifier = Modifier.fillMaxWidth(),
-                    readOnly = true,
-                    trailingIcon = {
-                        IconButton(onClick = { expanded = !expanded }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
-                        }
-                    }
-                )
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    layerTypes.forEach { layer ->
-                        DropdownMenuItem(
-                            onClick = {
-                                selectedLayer = layer
-                                expanded = false
-                            },
-                            text = {
-                                Text(layer.description)
-                            }
-                        )
-                    }
+
+        Box {
+            DropdownWeatherComponent(
+                selectedItem = selectedItem,
+                onItemSelected = { item ->
+                    selectedItem = item
+                    Log.d("SelectedItem", "Item $selectedItem")
+                    // ?Update
                 }
-            }
+            )
         }
 
         WeatherMapSlider(
@@ -147,10 +108,22 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
             currentTimeUnix = currentTimeUnix,
             onSelectedUnixTimeChange = { newUnixTime ->
                 selectedUnixTime = newUnixTime
+                Log.d("UnixTime", "Time $selectedUnixTime")
             }
         )
 
-        // Map style
+        Button(
+            onClick = {
+                mapView?.mapboxMap?.getStyle { style ->
+                    addOrUpdateRasterSourceAndLayer(style, API_KEY, selectedItem.code, selectedUnixTime)
+                }
+            },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Update Layer")
+        }
+
+        // Setting Map style
         val styleUrl = if (isDarkTheme) {
             "mapbox://styles/cosmo1024/cm5h2ah7a000d01s38y6x8ksa"
         } else {
@@ -164,15 +137,21 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
                     mapboxMap.apply {
                         loadStyleUri(styleUrl)
                     }
+                    mapboxMap.apply {
+                        setCamera(
+                            CameraOptions.Builder()
+                                .center(Point.fromLngLat(lon, lat))
+                                .zoom(4.0)
+                                .build()
+                        )
+                    }
                     mapView = this
                 }
             },
             update = { view ->
                 coroutineScope.launch(Dispatchers.Main) {
-                    val apiKey = "af95979eb6688d114fe2358eed5793bd"
-
                     view.mapboxMap.getStyle { style ->
-                        addOrUpdateRasterSourceAndLayer(style, apiKey, selectedLayer.code, selectedUnixTime)
+                        addOrUpdateRasterSourceAndLayer(style, API_KEY, selectedItem.code, selectedUnixTime)
                     }
 
                     view.location.updateSettings {
@@ -182,17 +161,85 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
                         enabled = true
                     }
 
+                    /*
+                     * Keep updating the camera position?
                     view.mapboxMap.apply {
                         setCamera(
                             CameraOptions.Builder()
                                 .center(Point.fromLngLat(lon, lat))
-                                .zoom(8.0)
+                                .zoom(4.0)
                                 .build()
                         )
                     }
+                    */
                 }
             }
         )
+    }
+}
+
+val layerTypes = listOf(
+    //LayerType("PAC0", "Convective precipitation", "mm"),
+    LayerType("PR0", "Precipitation Intensity", "mm/s"),
+    LayerType("PA0", "Accumulated Precipitation", "mm"),
+    //LayerType("PAR0", "Accumulated Precipitation - rain", "mm"),
+    //LayerType("PAS0", "Accumulated Precipitation - snow", "mm"),
+    LayerType("SD0", "Depth of Snow", "m"),
+    //LayerType("WS10", "Wind speed at an altitude of 10 meters", "m/s"),
+    // Joint display of speed wind (color) and wind direction (arrows), received by U and V components
+    LayerType("WND", "Avergae Wind Speed", "m/s"),
+    //LayerType("APM", "Atmospheric pressure on mean sea level", "hPa"),
+    //LayerType("TA2", "Air temperature at a height of 2 meters", "°C"),
+    LayerType("TD2", "Temperature of a Dew Point", "°C"),
+    //LayerType("TS0", "Soil temperature 0-10 cm", "K"),
+    //LayerType("TS10", "Soil temperature >10 cm", "K"),
+    LayerType("HRD0", "Relative Humidity", "%"),
+    LayerType("CL", "Cloudiness", "%")
+)
+
+data class LayerType(
+    val code: String,
+    val description: String,
+    val unit: String
+): Serializable
+
+@Composable
+fun DropdownWeatherComponent(
+    selectedItem: LayerType,
+    onItemSelected: (LayerType) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    TextField(
+        value = selectedItem.description,
+        onValueChange = { /* Do nothing here */ },
+        label = { Text(selectedItem.description) },
+        modifier = Modifier.fillMaxWidth(),
+        readOnly = true,
+        trailingIcon = {
+            IconButton(onClick = { expanded = !expanded }) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = null
+                )
+            }
+        }
+    )
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        layerTypes.forEach { item ->
+            DropdownMenuItem(
+                onClick = {
+                    onItemSelected(item)
+                    expanded = false
+                },
+                text = {
+                    Text(item.description)
+                }
+            )
+        }
     }
 }
 
@@ -248,7 +295,7 @@ fun TimeSlider(
 private fun addOrUpdateRasterSourceAndLayer(style: Style, apiKey: String, layer: String, unixTime: Long) {
     val sourceId = "weatherSource"
     val layerId = "weatherLayer"
-    val tileUrl = "https://maps.openweathermap.org/maps/2.0/weather/$layer/{z}/{x}/{y}?appid=$apiKey&date=$unixTime&opacity=0.7" // Use HTTPS
+    val tileUrl = "https://maps.openweathermap.org/maps/2.0/weather/$layer/{z}/{x}/{y}?appid=$apiKey&date=$unixTime&opacity=0.7"
 
     if (style.styleSourceExists(sourceId)) {
         // Update the source URL if the source already exists
