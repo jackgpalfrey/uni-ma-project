@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.weatherapplication.api.WeatherHandler
 import com.example.weatherapplication.api.responses.WeatherResponse
 import com.example.weatherapplication.api.responses.AirQualityResponse
+import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.location.GetUserLocation
 import com.example.weatherapplication.nav.BottomNavigationBar
 import com.example.weatherapplication.ui.theme.MyAppTheme
@@ -75,17 +77,33 @@ fun MainApp(themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
     // Data
     var weatherData: WeatherResponse? by remember { mutableStateOf(null) }
     var airData: AirQualityResponse? by remember { mutableStateOf(null) }
+    var forecastData: WeatherForecastResponse? by remember { mutableStateOf(null) }
 
     // Function to fetch weather
-    fun fetchWeatherAndAirQuality(lat: Double, long: Double) {
+    fun fetchWeatherData(lat: Double, long: Double) {
         isLoading = true
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val weatherHandler = WeatherHandler()
 
+                // Fetch weather forecast
+                weatherHandler.fetchFiveDayForecast(lat, long, object : WeatherHandler.ForecastCallback {
+                    override fun onSuccess(forecastResponse: WeatherForecastResponse) {
+                        forecastData = forecastResponse
+
+                        Log.d("Debug", "Forecast Data: $forecastData")
+                        isLoading = false
+                    }
+
+                    override fun onError(errorMessage: String) {
+                        Log.e("Forecast", "Error fetching forecast: $errorMessage")
+                        isLoading = false
+                    }
+                })
+
                 // Fetch weather
                 weatherHandler.fetchWeather(lat, long, object : WeatherHandler.WeatherCallback {
-                    override fun onSuccess(weatherResponse: WeatherResponse) {
+                    override fun onSuccess(weatherResponse: WeatherResponse?) {
                         weatherData = weatherResponse
                         
                         // After weather success, fetch air quality
@@ -94,7 +112,6 @@ fun MainApp(themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
                                 airData = airQualityResponse
 
                                 Log.d("Debug", "Weather Data: $weatherData, Air Data: $airData, Location: $userLatitude, $userLongitude")
-                                isLoading = false
                             }
 
                             override fun onError(errorMessage: String) {
@@ -128,10 +145,10 @@ fun MainApp(themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
         color = MaterialTheme.colorScheme.background
     ) {
         when {
-            weatherData != null && airData != null -> {
+            weatherData != null && airData != null && forecastData != null -> {
                 // Parse weatherData, lat, lon to navigation bar so can reuse it on screen components.
 
-                BottomNavigationBar(weatherData!!, airData!!, userLatitude, userLongitude, themeViewModel, isDarkTheme)
+                BottomNavigationBar(weatherData!!, airData!!, forecastData!!, userLatitude, userLongitude, themeViewModel, isDarkTheme)
             }
             else -> {
                 // Show an error message if weather data is not available
@@ -161,7 +178,7 @@ fun MainApp(themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
     LaunchedEffect(locationAvailable) {
         if (locationAvailable) {
             isLoading = true
-            fetchWeatherAndAirQuality(userLatitude, userLongitude)
+            fetchWeatherData(userLatitude, userLongitude)
         }
     }
 }

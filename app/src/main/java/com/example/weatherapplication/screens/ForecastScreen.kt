@@ -1,16 +1,20 @@
 package com.example.weatherapplication.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import com.example.weatherapplication.api.responses.AirQualityResponse
+import com.example.weatherapplication.api.responses.Forecast
+import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,83 +22,69 @@ import java.util.*
 @Composable
 fun ForecastScreen(
     weatherData: WeatherResponse,
-    airQualityData: AirQualityResponse
+    airQualityData: AirQualityResponse,
+    forecastData: WeatherForecastResponse,
 ) {
-    var forecastData by remember { mutableStateOf<WeatherResponse?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    // TODO:    Might have to add the reload
+
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    when {
-        isLoading -> {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator()
-            }
+    val groupedForecasts = forecastData.list.groupBy { it.dt_txt.split(" ")[0] }.toMutableMap()
+    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+    // Ensure current day is included until midnight
+    if (!groupedForecasts.containsKey(today)) {
+        val todayForecasts = forecastData.list.filter {
+            it.dt_txt.startsWith(today)
         }
-        errorMessage != null -> {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Text("Error: $errorMessage", style = MaterialTheme.typography.body1)
-            }
+        if (todayForecasts.isNotEmpty()) {
+            groupedForecasts[today] = todayForecasts
         }
-        forecastData != null -> {
-            val groupedForecasts = forecastData!!.groupBy { it.dt_txt.split(" ")[0] }.toMutableMap()
-            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    }
 
-            // Ensure current day is included until midnight
-            if (!groupedForecasts.containsKey(today)) {
-                val todayForecasts = forecastData!!.list.filter {
-                    it.dt_txt.startsWith(today)
+    val days = groupedForecasts.keys.sorted() // Ensure proper ordering
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = selectedTab,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            days.forEachIndexed { index, day ->
+                val formattedDay = if (day == today) {
+                    "Now"
+                } else {
+                    formatDayWithDate(day)
                 }
-                if (todayForecasts.isNotEmpty()) {
-                    groupedForecasts[today] = todayForecasts
-                }
-            }
-
-            val days = groupedForecasts.keys.sorted() // Ensure proper ordering
-
-            Column(modifier = Modifier.fillMaxSize()) {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    days.forEachIndexed { index, day ->
-                        val formattedDay = if (day == today) {
-                            "Today"
-                        } else {
-                            formatDayWithDate(day)
-                        }
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = {
-                                Text(
-                                    formattedDay.replace(" ", "\n"),
-                                    style = MaterialTheme.typography.body1,
-                                    fontSize = 13.9.sp,
-                                    lineHeight = 16.sp,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = {
+                        Text(
+                            formattedDay.replace(" ", "\n"),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 13.9.sp,
+                            lineHeight = 16.sp,
+                            textAlign = TextAlign.Center
                         )
                     }
-                }
+                )
+            }
+        }
 
-                if (days[selectedTab] == today) {
-                    val city = forecastData!!.city
-                    DaylightHoursBar(city.sunrise, city.sunset)
-                }
+        if (days[selectedTab] == today) {
+            val city = forecastData.city
+            DaylightHoursBar(city.sunrise, city.sunset)
+        }
 
-                val forecastsForDay = groupedForecasts[days[selectedTab]] ?: emptyList()
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(forecastsForDay) { forecast ->
-                        IntervalCard(forecast)
-                    }
-                }
+        val forecastsForDay = groupedForecasts[days[selectedTab]] ?: emptyList()
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(forecastsForDay) { forecast ->
+                IntervalCard(forecast)
             }
         }
     }
@@ -108,8 +98,7 @@ fun DaylightHoursBar(sunrise: Long, sunset: Long) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        elevation = 4.dp
+            .padding(8.dp)
     ) {
         Column(
             modifier = Modifier
@@ -118,28 +107,28 @@ fun DaylightHoursBar(sunrise: Long, sunset: Long) {
         ) {
             Text(
                 text = "Daylight Hours:",
-                style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Sunrise: $sunriseTime",
-                style = MaterialTheme.typography.body2
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = "Sunset: $sunsetTime",
-                style = MaterialTheme.typography.body2
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun IntervalCard(forecast: Forecast) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = 4.dp
+            .padding(vertical = 4.dp)
     ) {
         Column(
             modifier = Modifier
@@ -148,28 +137,28 @@ fun IntervalCard(forecast: Forecast) {
         ) {
             Text(
                 text = format24HourTime(forecast.dt_txt),
-                style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "${forecast.main.temp}°C",
-                style = MaterialTheme.typography.body1
+                style = MaterialTheme.typography.bodyLarge
             )
             Text(
                 text = forecast.weather[0].main,
-                style = MaterialTheme.typography.body2
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = "Precipitation: ${String.format("%.0f", forecast.pop * 100)}%",
-                style = MaterialTheme.typography.body2
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = "Wind: ${forecast.wind.speed} m/s",
-                style = MaterialTheme.typography.body2
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = "Humidity: ${forecast.main.humidity}%",
-                style = MaterialTheme.typography.body2
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }

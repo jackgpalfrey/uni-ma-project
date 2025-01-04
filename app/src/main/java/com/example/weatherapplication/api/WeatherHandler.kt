@@ -1,6 +1,7 @@
 package com.example.weatherapplication.api
 
 import com.example.weatherapplication.api.responses.AirQualityResponse
+import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
 import retrofit2.Call
 import retrofit2.Callback
@@ -36,6 +37,33 @@ class WeatherHandler {
         })
     }
 
+    // Fetches 5 day forecast
+    fun fetchFiveDayForecast(lat: Double, lon: Double, callback: ForecastCallback) {
+        val call = RetrofitClient.weatherService.getFiveDayForecast(lat, lon, API_KEY)
+
+        call.enqueue(object : Callback<WeatherForecastResponse> {
+            override fun onResponse(
+                call: Call<WeatherForecastResponse>,
+                response: Response<WeatherForecastResponse>
+            ) {
+                if (response.isSuccessful) {
+                    val forecastResponse = response.body()
+                    if (forecastResponse != null) {
+                        callback.onSuccess(forecastResponse)
+                    } else {
+                        callback.onError("Empty response from server.")
+                    }
+                } else {
+                    callback.onError("Error: ${response.code()}")
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherForecastResponse>, t: Throwable) {
+                callback.onError("Failed to fetch forecast: ${t.message}")
+            }
+        })
+    }
+
     fun fetchAirQuality(lat: Double, lon: Double, callback: AirQualityCallback) {
         val call = RetrofitClient.weatherService.getAirPollution(lat, lon, API_KEY)
 
@@ -63,12 +91,17 @@ class WeatherHandler {
     }
 
     interface WeatherCallback {
-        fun onSuccess(weatherResponse: WeatherResponse)
+        fun onSuccess(weatherResponse: WeatherResponse?)
         fun onError(errorMessage: String)
     }
 
     interface AirQualityCallback {
         fun onSuccess(airQualityResponse: AirQualityResponse)
+        fun onError(errorMessage: String)
+    }
+
+    interface ForecastCallback {
+        fun onSuccess(forecastResponse: WeatherForecastResponse)
         fun onError(errorMessage: String)
     }
 }
