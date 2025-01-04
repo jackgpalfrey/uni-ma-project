@@ -1,4 +1,4 @@
-package com.example.weatherapplication.api
+package com.example.weatherapplication.api.responses
 
 data class WeatherResponse(
     val coord: Coord,

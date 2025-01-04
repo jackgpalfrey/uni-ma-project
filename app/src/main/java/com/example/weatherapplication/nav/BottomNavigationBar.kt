@@ -12,14 +12,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.weatherapplication.Views
-import com.example.weatherapplication.api.WeatherResponse
-import com.example.weatherapplication.api.AirQualityResponse
+import com.example.weatherapplication.api.responses.AirQualityResponse
+import com.example.weatherapplication.api.responses.WeatherResponse
 import com.example.weatherapplication.screens.ForecastScreen
 import com.example.weatherapplication.screens.HomeScreen
 import com.example.weatherapplication.screens.MapScreen
+import com.example.weatherapplication.screens.SettingsScreen
+import com.example.weatherapplication.ui.theme.ThemeViewModel
+
 
 @Composable
-fun BottomNavigationBar(weatherData: WeatherResponse, airData: AirQualityResponse, userLongitude: Double, userLatitude: Double) {
+fun BottomNavigationBar(weatherData: WeatherResponse, airData: AirQualityResponse, userLongitude: Double, userLatitude: Double, themeViewModel: ThemeViewModel, isDarkMode: Boolean) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -53,20 +56,29 @@ fun BottomNavigationBar(weatherData: WeatherResponse, airData: AirQualityRespons
                 }
             }
         }
-    ) {paddingValues ->
+    ) { paddingValues ->
         NavHost(
             navController = navController,
             startDestination = Views.Home.route,
-            modifier = Modifier.padding(paddingValues = paddingValues)) {
-
+            modifier = Modifier.padding(paddingValues = paddingValues)
+        ) {
             composable(Views.Home.route) {
                 HomeScreen(weatherData, airData)
             }
             composable(Views.Map.route) {
-                MapScreen(userLongitude, userLatitude)
+                MapScreen(userLongitude, userLatitude, themeViewModel, isDarkMode)
             }
             composable(Views.Forecast.route) {
                 ForecastScreen()
+            }
+            composable(Views.Settings.route) {
+                SettingsScreen(
+                    weatherData,
+                    airData,
+                    userLongitude,
+                    userLatitude,
+                    themeViewModel
+                )
             }
         }
     }

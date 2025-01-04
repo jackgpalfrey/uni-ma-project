@@ -1,16 +1,11 @@
 package com.example.weatherapplication.api
 
+import com.example.weatherapplication.api.responses.AirQualityResponse
+import com.example.weatherapplication.api.responses.WeatherResponse
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-/**
- * Encapsulation: The WeatherHandler class abstracts away the details of the Retrofit API calls.
- * Reusability: The WeatherHandler class can be used across multiple Activities, Fragments, or ViewModels.
- * Separation of Concerns: The WeatherHandler focuses solely on fetching weather data,
- *  while the caller handles UI or further processing.
- *
- */
 private const val API_KEY: String = "f129e0a6aafbd7ec0c71ed808a7b7b53"
 
 class WeatherHandler {

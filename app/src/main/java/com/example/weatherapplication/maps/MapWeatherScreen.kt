@@ -20,25 +20,20 @@ import com.mapbox.maps.extension.style.sources.generated.rasterSource
 import com.mapbox.maps.extension.style.sources.getSourceAs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MapWeatherScreen(userLatitude = 0.0, userLongitude = 7.0)
-        }
-    }
-}
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 @Composable
 fun MapWeatherScreen(userLatitude: Double, userLongitude: Double) {
     var mapView by remember { mutableStateOf<MapView?>(null) }
     val coroutineScope = rememberCoroutineScope()
     var timeSteps by remember { mutableStateOf<List<String>>(emptyList()) }
-    var currentTimeStepIndex by rememberSaveable { mutableIntStateOf(0) }
+    var currentTimeStepIndex by rememberSaveable { mutableIntStateOf(0) }  // Use rememberSaveable
 
     // Fetch time steps on initial launch
     LaunchedEffect(Unit) {
@@ -50,12 +45,31 @@ fun MapWeatherScreen(userLatitude: Double, userLongitude: Double) {
         coroutineScope.launch(Dispatchers.IO) {
             val fetchedTimeSteps = fetchTimeInfo(timeApiUrl)
             fetchedTimeSteps?.let {
-                timeSteps = it
+                withContext(Dispatchers.Main) {
+                    timeSteps = it
+                }
             }
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        if (timeSteps.isNotEmpty()) {
+            val currentTimeStep = timeSteps[currentTimeStepIndex]
+            val formattedTimeStep = formatTimeStep(currentTimeStep)
+
+            Text(
+                text = formattedTimeStep,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            Slider(
+                value = currentTimeStepIndex.toFloat(),
+                onValueChange = { currentTimeStepIndex = it.toInt() },
+                valueRange = 0f..(timeSteps.size - 1).toFloat(),
+                modifier = Modifier.padding(16.dp, 0.dp)
+            )
+        }
+
         AndroidView(
             modifier = Modifier.weight(1f),
             factory = { context ->
@@ -64,7 +78,7 @@ fun MapWeatherScreen(userLatitude: Double, userLongitude: Double) {
                         setCamera(
                             com.mapbox.maps.CameraOptions.Builder()
                                 .center(com.mapbox.geojson.Point.fromLngLat(userLongitude, userLatitude))
-                                .zoom(5.0)
+                                .zoom(6.0)
                                 .build()
                         )
                         loadStyleUri("mapbox://styles/mapbox/streets-v11")
@@ -74,7 +88,7 @@ fun MapWeatherScreen(userLatitude: Double, userLongitude: Double) {
             },
             update = { view ->
                 mapView = view
-                coroutineScope.launch(Dispatchers.IO) {
+                coroutineScope.launch(Dispatchers.Main) {
                     val apiKey = "be72f76237db"
                     if (timeSteps.isNotEmpty()) {
                         val currentTimeStep = timeSteps[currentTimeStepIndex]
@@ -85,19 +99,6 @@ fun MapWeatherScreen(userLatitude: Double, userLongitude: Double) {
                 }
             }
         )
-
-        if (timeSteps.isNotEmpty()) {
-            Slider(
-                value = currentTimeStepIndex.toFloat(),
-                onValueChange = { currentTimeStepIndex = it.toInt() },
-                valueRange = 0f..(timeSteps.size - 1).toFloat(),
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Time Step: ${timeSteps[currentTimeStepIndex]}",
-                modifier = Modifier.padding(16.dp)
-            )
-        }
     }
 }
 
@@ -141,8 +142,19 @@ private fun addOrUpdateRasterSourceAndLayer(style: Style, apiKey: String, timeSt
         // Add the layer if it doesn't exist
         val layer = rasterLayer(layerId, sourceId) {
             minZoom(1.0)
-            maxZoom(6.0)
+            maxZoom(10.0)
         }
         style.addLayerAbove(layer, "building")
+    }
+}
+
+private fun formatTimeStep(timeStep: String): String {
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd/yyyyMMdd_HHmm") // Adjust pattern based on your timeStep format
+        val dateTime = LocalDateTime.parse(timeStep, formatter)
+        val outputFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy, hh:mm a")
+        dateTime.format(outputFormatter)
+    } catch (e: DateTimeParseException) {
+        timeStep // Return the original string if parsing fails
     }
 }

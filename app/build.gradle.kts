@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.weatherapplication"
-        minSdk = 21
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -84,6 +84,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
 
     implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.accompanist:accompanist-navigation-animation:0.23.1")
 
     // Jetpack Compose core libraries
     implementation(libs.ui)                // Compose UI library
