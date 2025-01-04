@@ -27,7 +27,7 @@ fun BottomNavigationBar(weatherData: WeatherResponse, userLongitude: Double, use
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar {
-                BottomNavigationItem().bottomNavigationItems().forEachIndexed { _, navigationItem ->
+                BottomNavigationItem().bottomNavigationItems().forEach { navigationItem ->
                     NavigationBarItem(
                         selected = navigationItem.route == currentDestination?.route,
                         label = {
@@ -52,12 +52,12 @@ fun BottomNavigationBar(weatherData: WeatherResponse, userLongitude: Double, use
                 }
             }
         }
-    ) {paddingValues ->
+    ) { paddingValues ->
         NavHost(
             navController = navController,
             startDestination = Views.Home.route,
-            modifier = Modifier.padding(paddingValues = paddingValues)) {
-
+            modifier = Modifier.padding(paddingValues)
+        ) {
             composable(Views.Home.route) {
                 HomeScreen(weatherData)
             }
@@ -65,7 +65,7 @@ fun BottomNavigationBar(weatherData: WeatherResponse, userLongitude: Double, use
                 MapScreen(userLongitude, userLatitude)
             }
             composable(Views.Forecast.route) {
-                ForecastScreen(weatherData) // No data passed since ForecastScreen fetches its own data
+                ForecastScreen(userLongitude, userLatitude)
             }
         }
     }

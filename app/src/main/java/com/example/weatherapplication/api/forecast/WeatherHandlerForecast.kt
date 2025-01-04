@@ -1,26 +1,23 @@
 package com.example.weatherapplication.api.forecast
 
 import com.example.weatherapplication.api.API_KEY
-import com.example.weatherapplication.api.RetrofitClient
-import com.example.weatherapplication.api.WeatherResponse
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class WeatherHandlerForecast {
-    // Fetches weather data for a given latitude and longitude
-    fun fetchWeather(lat: Double, lon: Double, callback: WeatherCallback) {
-        val call = RetrofitClient.weatherService.getCurrentWeather(lat, lon, API_KEY)
+    fun fetchFiveDayForecast(lat: Double, lon: Double, callback: WeatherCallback) {
+        val call = RetrofitClient.weatherService.getFiveDayForecast(lat, lon, API_KEY)
 
-        call.enqueue(object : Callback<WeatherResponse> {
+        call.enqueue(object : Callback<WeatherResponseForecast> {
             override fun onResponse(
-                call: Call<WeatherResponse>,
-                response: Response<WeatherResponse>
+                call: Call<WeatherResponseForecast>,
+                response: Response<WeatherResponseForecast>
             ) {
                 if (response.isSuccessful) {
-                    val weatherResponse = response.body()
-                    if (weatherResponse != null) {
-                        callback.onSuccess(weatherResponse)
+                    val forecastResponse = response.body()
+                    if (forecastResponse != null) {
+                        callback.onSuccess(forecastResponse)
                     } else {
                         callback.onError("Empty response from server.")
                     }
@@ -29,14 +26,16 @@ class WeatherHandlerForecast {
                 }
             }
 
-            override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
-                callback.onError("Failed to fetch weather: ${t.message}")
+            override fun onFailure(call: Call<WeatherResponseForecast>, t: Throwable) {
+                callback.onError("Failed to fetch forecast: ${t.message}")
             }
         })
     }
 
     interface WeatherCallback {
-        fun onSuccess(weatherResponse: WeatherResponse)
+        fun onSuccess(forecastResponse: WeatherResponseForecast)
         fun onError(errorMessage: String)
     }
 }
+
+

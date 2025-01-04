@@ -1,114 +1,245 @@
 package com.example.weatherapplication.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
-import com.example.weatherapplication.maps.SimpleMap
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.weatherapplication.api.WeatherResponse
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.URL
-
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import com.example.weatherapplication.api.forecast.Forecast
+import com.example.weatherapplication.api.forecast.WeatherHandlerForecast
+import com.example.weatherapplication.api.forecast.WeatherResponseForecast
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
-fun ForecastScreen(data: WeatherResponse) {
-    // State variables for loading, error, and weather data
-    var weatherData by remember { mutableStateOf<WeatherResponse?>(null) }
+fun ForecastScreen(userLatitude: Double, userLongitude: Double) {
+    var forecastData by remember { mutableStateOf<WeatherResponseForecast?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var selectedTab by remember { mutableStateOf(0) }
 
-    // Fetch weather data once when the screen is composed
     LaunchedEffect(Unit) {
-        try {
-//            val data = fetchWeatherData("London") // Replace "London" with your desired location
-            weatherData = data
-        } catch (e: Exception) {
-            errorMessage = e.message ?: "An unknown error occurred."
-        } finally {
-            isLoading = false
-        }
+        val weatherHandler = WeatherHandlerForecast()
+        weatherHandler.fetchFiveDayForecast(
+            lat = userLatitude,
+            lon = userLongitude,
+            object : WeatherHandlerForecast.WeatherCallback {
+                override fun onSuccess(forecastResponse: WeatherResponseForecast) {
+                    forecastData = forecastResponse
+                    isLoading = false
+                }
+
+                override fun onError(message: String) {
+                    errorMessage = message
+                    isLoading = false
+                }
+            }
+        )
     }
 
-    // UI content
     when {
         isLoading -> {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 CircularProgressIndicator()
             }
         }
         errorMessage != null -> {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Text("Error: $errorMessage")
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Text("Error: $errorMessage", style = MaterialTheme.typography.body1)
             }
         }
-        weatherData != null -> {
-            WeatherForecast(weatherData!!)
+        forecastData != null -> {
+            val groupedForecasts = forecastData!!.list.groupBy { it.dt_txt.split(" ")[0] }.toMutableMap()
+            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+            // Ensure current day is included until midnight
+            if (!groupedForecasts.containsKey(today)) {
+                val todayForecasts = forecastData!!.list.filter {
+                    it.dt_txt.startsWith(today)
+                }
+                if (todayForecasts.isNotEmpty()) {
+                    groupedForecasts[today] = todayForecasts
+                }
+            }
+
+            val days = groupedForecasts.keys.sorted() // Ensure proper ordering
+
+            Column(modifier = Modifier.fillMaxSize()) {
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    days.forEachIndexed { index, day ->
+                        val formattedDay = if (day == today) {
+                            "Today"
+                        } else {
+                            formatDayWithDate(day)
+                        }
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = {
+                                Text(
+                                    formattedDay.replace(" ", "\n"),
+                                    style = MaterialTheme.typography.body1,
+                                    fontSize = 13.9.sp,
+                                    lineHeight = 16.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        )
+                    }
+                }
+
+                if (days[selectedTab] == today) {
+                    val city = forecastData!!.city
+                    DaylightHoursBar(city.sunrise, city.sunset)
+                }
+
+                val forecastsForDay = groupedForecasts[days[selectedTab]] ?: emptyList()
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(forecastsForDay) { forecast ->
+                        IntervalCard(forecast)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun WeatherForecast(weatherData: WeatherResponse) {
-    LazyColumn(
+fun DaylightHoursBar(sunrise: Long, sunset: Long) {
+    val sunriseTime = formatTimeWithoutAmPm(sunrise)
+    val sunsetTime = formatTimeWithoutAmPm(sunset)
+
+    Card(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .fillMaxWidth()
+            .padding(8.dp),
+        elevation = 4.dp
     ) {
-        item {
-            Text("Weather Forecast for ${weatherData.weather[0].main}", style = MaterialTheme.typography.headlineMedium)
-        }
-        item {
-            Text("Temperature: ${weatherData.main.temp}°C")
-            Text("Condition: ${weatherData.weather[0].description}")
-        }
-        item {
-            Text("Humidity: ${weatherData.main.humidity}%")
-            Text("Wind Speed: ${weatherData.wind.speed} m/s")
+        Column(
+            modifier = Modifier
+                .padding(16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = "Daylight Hours:",
+                style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Sunrise: $sunriseTime",
+                style = MaterialTheme.typography.body2
+            )
+            Text(
+                text = "Sunset: $sunsetTime",
+                style = MaterialTheme.typography.body2
+            )
         }
     }
 }
 
-data class WeatherData(
-    val cityName: String,
-    val temperature: Double,
-    val condition: String,
-    val humidity: Int,
-    val windSpeed: Double
-)
-
-// Function to fetch weather data from the API
-suspend fun fetchWeatherData(city: String): WeatherData {
-    val apiKey = "f129e0a6aafbd7ec0c71ed808a7b7b53"
-    val url = "https://api.openweathermap.org/data/2.5/weather?q=$city&units=metric&appid=$apiKey"
-
-    return withContext(Dispatchers.IO) {
-        val response = URL(url).readText()
-        val jsonObject = JSONObject(response)
-
-        val cityName = jsonObject.getString("name")
-        val main = jsonObject.getJSONObject("main")
-        val weather = jsonObject.getJSONArray("weather").getJSONObject(0)
-        val wind = jsonObject.getJSONObject("wind")
-
-        WeatherData(
-            cityName = cityName,
-            temperature = main.getDouble("temp"),
-            condition = weather.getString("description"),
-            humidity = main.getInt("humidity"),
-            windSpeed = wind.getDouble("speed")
-        )
+@Composable
+fun IntervalCard(forecast: Forecast) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = format24HourTime(forecast.dt_txt),
+                style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${forecast.main.temp}°C",
+                style = MaterialTheme.typography.body1
+            )
+            Text(
+                text = forecast.weather[0].main,
+                style = MaterialTheme.typography.body2
+            )
+            Text(
+                text = "Precipitation: ${String.format("%.0f", forecast.pop * 100)}%",
+                style = MaterialTheme.typography.body2
+            )
+            Text(
+                text = "Wind: ${forecast.wind.speed} m/s",
+                style = MaterialTheme.typography.body2
+            )
+            Text(
+                text = "Humidity: ${forecast.main.humidity}%",
+                style = MaterialTheme.typography.body2
+            )
+        }
     }
+}
+
+fun formatDayWithDate(dateString: String): String {
+    val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val outputFormat = SimpleDateFormat("EEE d/M", Locale.getDefault())
+    return try {
+        val date = inputFormat.parse(dateString)
+        if (date != null) {
+            outputFormat.format(date)
+        } else {
+            "Unknown"
+        }
+    } catch (e: Exception) {
+        "Invalid"
+    }
+}
+
+fun formatDay(dateString: String): String {
+    val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val outputFormat = SimpleDateFormat("EEE", Locale.getDefault())
+    return try {
+        val date = inputFormat.parse(dateString)
+        if (date != null) {
+            outputFormat.format(date)
+        } else {
+            "Unknown"
+        }
+    } catch (e: Exception) {
+        "Invalid"
+    }
+}
+
+fun format24HourTime(dateString: String): String {
+    val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    val outputFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return try {
+        val date = inputFormat.parse(dateString)
+        if (date != null) {
+            outputFormat.format(date)
+        } else {
+            "Unknown"
+        }
+    } catch (e: Exception) {
+        "Invalid"
+    }
+}
+
+fun formatTimeWithoutAmPm(unixTime: Long): String {
+    val date = Date(unixTime * 1000) // Convert seconds to milliseconds
+    val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return format.format(date)
 }

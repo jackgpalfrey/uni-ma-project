@@ -18,13 +18,12 @@ object RetrofitClient {
     }
 }
 
-// OpenWeather password; uweWeatherApp_123!
 interface WeatherService {
-    @GET("data/2.5/weather")
-    fun getCurrentWeather(
+    @GET("data/2.5/forecast")
+    fun getFiveDayForecast(
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
         @Query("appid") apiKey: String,
-        @Query("metric") units: String = "metric"
-    ): Call<WeatherResponse>
+        @Query("units") units: String = "metric"
+    ): Call<WeatherResponseForecast>
 }
