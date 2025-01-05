@@ -18,7 +18,7 @@ import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
 import java.text.SimpleDateFormat
 import java.util.*
-
+/*
 @Composable
 fun ForecastScreen(
     weatherData: WeatherResponse,
@@ -213,4 +213,4 @@ fun formatTimeWithoutAmPm(unixTime: Long): String {
     val date = Date(unixTime * 1000) // Convert seconds to milliseconds
     val format = SimpleDateFormat("HH:mm", Locale.getDefault())
     return format.format(date)
-}
+}*/

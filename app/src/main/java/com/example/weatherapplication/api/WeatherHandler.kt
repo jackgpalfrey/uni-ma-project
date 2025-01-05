@@ -64,6 +64,7 @@ class WeatherHandler {
         })
     }
 
+    // Fetch Air quality
     fun fetchAirQuality(lat: Double, lon: Double, callback: AirQualityCallback) {
         val call = RetrofitClient.weatherService.getAirPollution(lat, lon, API_KEY)
 
@@ -86,6 +87,30 @@ class WeatherHandler {
 
             override fun onFailure(call: Call<AirQualityResponse>, t: Throwable) {
                 callback.onError("Failed to fetch air quality: ${t.message}")
+            }
+        })
+    }
+
+    // Fetch weather by city
+    fun fetchWeatherByCity(
+        cityName: String,
+        callback: ForecastCallback
+    ) {
+        val call = RetrofitClient.weatherService.getWeatherByCity(cityName, API_KEY)
+        call.enqueue(object : Callback<WeatherForecastResponse> {
+            override fun onResponse(
+                call: Call<WeatherForecastResponse>,
+                response: Response<WeatherForecastResponse>
+            ) {
+                if (response.isSuccessful && response.body() != null) {
+                    callback.onSuccess(response.body()!!)
+                } else {
+                    callback.onError("Error: ${response.message()}")
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherForecastResponse>, t: Throwable) {
+                callback.onError("Failure: ${t.message}")
             }
         })
     }

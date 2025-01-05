@@ -86,6 +86,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.accompanist:accompanist-navigation-animation:0.23.1")
 
+    implementation("com.google.accompanist:accompanist-pager:0.30.1")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.30.1")
+
     // Jetpack Compose core libraries
     implementation(libs.ui)                // Compose UI library
     implementation(libs.androidx.material)     // Material design library

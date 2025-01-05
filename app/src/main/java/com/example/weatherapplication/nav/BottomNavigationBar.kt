@@ -2,7 +2,11 @@ package com.example.weatherapplication.nav
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -15,7 +19,7 @@ import com.example.weatherapplication.Views
 import com.example.weatherapplication.api.responses.AirQualityResponse
 import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
-import com.example.weatherapplication.screens.ForecastScreen
+import com.example.weatherapplication.screens.ForecastScreen2
 import com.example.weatherapplication.screens.HomeScreen
 import com.example.weatherapplication.screens.MapScreen
 import com.example.weatherapplication.screens.SettingsScreen
@@ -70,7 +74,7 @@ fun BottomNavigationBar(weatherData: WeatherResponse, airData: AirQualityRespons
                 MapScreen(userLongitude, userLatitude, themeViewModel, isDarkMode)
             }
             composable(Views.Forecast.route) {
-                ForecastScreen(weatherData, airData, forecastData)
+                ForecastScreen2(userLatitude, userLongitude)
             }
             composable(Views.Settings.route) {
                 SettingsScreen(
