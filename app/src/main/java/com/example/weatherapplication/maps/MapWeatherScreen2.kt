@@ -3,8 +3,10 @@ package com.example.weatherapplication.maps
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -27,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -35,6 +38,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
+import com.mapbox.maps.extension.style.expressions.dsl.generated.switchCase
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.rasterLayer
 import com.mapbox.maps.extension.style.sources.addSource
@@ -57,15 +61,19 @@ const val API_KEY = "af95979eb6688d114fe2358eed5793bd"
 
 // LayerTypes
 private val layerTypes = listOf(
-    //LayerType("PAC0", "Convective precipitation", "mm"),
-    LayerType("PR0", "Precipitation Intensity", "mm/s"),
+    LayerType("temp_new", "Temperature Map", "?"),
+    //LayerType("radar", "Global Precipitation Map", "mm/h"),
+    //LayerType("precipitation_new", "Rain Map", "mm/s"),
     LayerType("PA0", "Accumulated Precipitation", "mm"),
+    //LayerType("PAC0", "Convective precipitation", "mm"),
+    LayerType("PR0", "Precipitation Intensity Map", "mm/s"),
+    //LayerType("PA0", "Accumulated Precipitation", "mm"),
     //LayerType("PAR0", "Accumulated Precipitation - rain", "mm"),
     //LayerType("PAS0", "Accumulated Precipitation - snow", "mm"),
-    LayerType("SD0", "Depth of Snow", "m"),
+    LayerType("SD0", "Snow Depth Map", "m"),
     //LayerType("WS10", "Wind speed at an altitude of 10 meters", "m/s"),
     // Joint display of speed wind (color) and wind direction (arrows), received by U and V components
-    LayerType("WND", "Avergae Wind Speed", "m/s"),
+    //LayerType("WND", "Avergae Wind Speed", "m/s"),
     //LayerType("APM", "Atmospheric pressure on mean sea level", "hPa"),
     //LayerType("TA2", "Air temperature at a height of 2 meters", "°C"),
     LayerType("TD2", "Temperature of a Dew Point", "°C"),
@@ -92,7 +100,7 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
     var mapView by remember { mutableStateOf<MapView?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Slider
+    // Slider data
     var currentTimeUnix by rememberSaveable { mutableLongStateOf(System.currentTimeMillis() / 1000L) }
     var selectedUnixTime by rememberSaveable { mutableStateOf(currentTimeUnix) }
 
@@ -104,16 +112,70 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
     // Select Default Map overlay
     var selectedItem by rememberSaveable { mutableStateOf<LayerType>(layerTypes[0]) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Dropdown Menu
+    // Update weather style layer according to API type
+    fun updateWeatherMapStyle() {
+        mapView?.mapboxMap?.getStyle { style ->
+            when (selectedItem.code) {
+                "temp_new" ->
+                    addOrUpdateRasterSourceAndLayer(
+                        style,
+                        API_KEY,
+                        "temp_new",
+                        selectedUnixTime)
 
-        Box {
+                "precipitation_new" ->
+                    addOrUpdateRasterSourceAndLayer(
+                        style,
+                        API_KEY,
+                        "precipitation_new",
+                        selectedUnixTime
+                    )
+
+                "radar" ->
+                    addOrUpdateRasterSourceAndLayer3(
+                        style,
+                        API_KEY,
+                        selectedUnixTime
+                    )
+
+                "PR0" ->
+                    addOrUpdateRasterSourceAndLayer2(
+                        style,
+                        API_KEY,
+                        "PR0",
+                        selectedUnixTime,
+                        "0.5"
+                    )
+
+                else -> {
+                    addOrUpdateRasterSourceAndLayer2(
+                        style,
+                        API_KEY,
+                        selectedItem.code,
+                        selectedUnixTime,
+                        "0.8"
+                    )
+                }
+            }
+        }
+
+        Log.d("MapView", "Updated Layer to {$selectedItem.code}")
+    }
+
+    // Visual
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Box(
+            modifier = Modifier.padding(16.dp)
+        ) {
             DropdownWeatherComponent(
                 selectedItem = selectedItem,
                 onItemSelected = { item ->
                     selectedItem = item
                     Log.d("SelectedItem", "Item $selectedItem")
-                    // ?Update
+
+                    updateWeatherMapStyle()
                 }
             )
         }
@@ -124,22 +186,44 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
             onSelectedUnixTimeChange = { newUnixTime ->
                 selectedUnixTime = newUnixTime
                 Log.d("UnixTime", "Time $selectedUnixTime")
-            }
+
+                updateWeatherMapStyle()
+            },
         )
 
+        /*
         Button(
             onClick = {
                 mapView?.mapboxMap?.getStyle { style ->
-                    //addOrUpdateRasterSourceAndLayer(style, API_KEY, "wind_new", selectedUnixTime, "0.5")
-                    addOrUpdateRasterSourceAndLayer(style, API_KEY, "temp_new", selectedUnixTime, "0.6")
-                    //addOrUpdateRasterSourceAndLayer2(style, API_KEY, "TA2", selectedUnixTime, "0.5")
+                    /**
+                     *
+                     * Update the map layer when button press:
+                     */
+                    when (selectedItem.code) {
+                        "temp_new" ->
+                            addOrUpdateRasterSourceAndLayer(style, API_KEY, "temp_new", selectedUnixTime)
+                        "precipitation_new" ->
+                            addOrUpdateRasterSourceAndLayer(style, API_KEY, "precipitation_new", selectedUnixTime)
+                        else -> {
+                            addOrUpdateRasterSourceAndLayer2(style, API_KEY, selectedItem.code, selectedUnixTime, "0.7")
+                        }
+                    }
                 }
             },
             modifier = Modifier.padding(16.dp)
         ) {
             Text("Update")
-        }
+        }*/
 
+        /**
+         *
+         * MapView
+         */
+
+        /**
+         *
+         * MapView
+         */
         AndroidView(
             modifier = Modifier.weight(1f),
             factory = { context ->
@@ -156,45 +240,47 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, themeViewMode
                         )
                     }
                     mapView = this
+
+                    updateWeatherMapStyle()
                 }
             },
             update = { view ->
                 coroutineScope.launch(Dispatchers.Main) {
-                    view.mapboxMap.getStyle { style ->
-                        //addOrUpdateRasterSourceAndLayer(style, API_KEY, "wind_new", selectedUnixTime, "0.5")
-                        addOrUpdateRasterSourceAndLayer(style, API_KEY, "temp_new", selectedUnixTime, "0.8")
-                        //addOrUpdateRasterSourceAndLayer2(style, API_KEY, "TA2", selectedUnixTime, "0.5")
-                    }
-
                     view.location.updateSettings {
                         locationPuck = createDefault2DPuck(withBearing = false)
                         puckBearingEnabled = true
                         puckBearing = PuckBearing.HEADING
                         enabled = true
                     }
-
-                    /*
-                     * Keep updating the camera position?
-                    view.mapboxMap.apply {
-                        setCamera(
-                            CameraOptions.Builder()
-                                .center(Point.fromLngLat(lon, lat))
-                                .zoom(4.0)
-                                .build()
-                        )
-                    }
-                    */
                 }
             }
         )
 
         /**
          * Dynamically updating gradient scale for data visualisation
+         *
          */
-        Column(
-            modifier = Modifier.padding(2.dp)
-        ) {
-            TemperatureGradientBoxPreview()
+
+        /**
+         * Dynamically updating gradient scale for data visualisation
+         *
+         */
+        when (selectedItem.code) {
+            "temp_new" ->
+                Column(
+                    modifier = Modifier.padding(2.dp)
+                ) {
+                    TemperatureGradientBox()
+                }
+            "PR0" ->
+                Column(
+                    modifier = Modifier.padding(2.dp)
+                ) {
+                    PrecipitationGradientBox()
+                }
+            else -> {
+                Log.d("GradientBox", "None available")
+            }
         }
     }
 }
@@ -248,8 +334,6 @@ fun WeatherMapSlider(
     var currentSliderValue by rememberSaveable { mutableStateOf(initialSliderValue) }
     val totalHours = 4 * 24
     val oneHourInSeconds = 3600
-    val valueRange1 = -24f..0f
-    val valueRange2 = 0f..24f
 
     // Update selectedUnixTime based on the currentSliderValue
     LaunchedEffect(currentSliderValue) {
@@ -268,8 +352,7 @@ fun WeatherMapSlider(
         )
 
         Text(
-            text = "Date: $formattedDateTime",
-
+            text = "Currently viewing $formattedDateTime",
             modifier = Modifier.padding(16.dp)
         )
     }
@@ -287,7 +370,7 @@ fun TimeSlider(
         onValueChange = onSliderValueChange,
         valueRange = valueRange,
         steps = totalHours - 1,
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp).height(4.dp)
     )
 }
 
@@ -296,52 +379,52 @@ private fun addOrUpdateRasterSourceAndLayer(
     style: Style,
     apiKey: String,
     layer: String,
-    unixTime: Long,
-    opacity: String
+    unixTime: Long
 ) {
     val sourceId = "weatherSource"
     val layerId = "weatherLayer"
-    val tileUrl = "https://tile.openweathermap.org/map/$layer/{z}/{x}/{y}.png?appid=$apiKey&date=$unixTime&opacity=$opacity"
+    val tileUrl = "https://tile.openweathermap.org/map/$layer/{z}/{x}/{y}.png?appid=$apiKey&date=$unixTime"
 
-    if (style.styleSourceExists(sourceId)) {
-        // Update the source URL if the source already exists
-        val source = style.getSourceAs<RasterSource>(sourceId)
-        source?.tiles(listOf(tileUrl))
-    } else {
-        // Add the source if it doesn't exist
-        val source = rasterSource(sourceId) {
-            tileSize(512)
-            tiles(listOf(tileUrl))
-        }
-        style.addSource(source)
-    }
-
-    if (!style.styleLayerExists(layerId)) {
-        // Add the layer if it doesn't exist
-        val tile = rasterLayer(layerId, sourceId) {
-            minZoom(1.0)
-            maxZoom(20.0)
-        }
-        style.addLayer(tile)
-    }
+    tileGetterService(style, sourceId, layerId, tileUrl)
 }
 
+// v2 API implementation
 private fun addOrUpdateRasterSourceAndLayer2(
     style: Style,
     apiKey: String,
     layer: String,
     unixTime: Long,
-    opacity: String = "0.8"
+    opacity: String = "0.6"
 ) {
     val sourceId = "weatherSource"
     val layerId = "weatherLayer"
-
     var tileUrl = "https://maps.openweathermap.org/maps/2.0/weather/$layer/{z}/{x}/{y}?appid=$apiKey&date=$unixTime&fill_bound=true&opacity=$opacity"
 
-    if (layer === "TA2") {
-    //    tileUrl = "https://maps.openweathermap.org/maps/2.0/weather/$layer/{z}/{x}/{y}?appid=$apiKey&date=$unixTime&fill_bound=true&opacity=$opacity&palette=-65:821692;-55:821692;-45:821692;-40:821692;-30:8257db;-20:208cec;-10:20c4e8;0:23dddd;10:c2ff28;20:fff028;25:ffc228;30:fc8014"
-    }
+    tileGetterService(style, sourceId, layerId, tileUrl)
+}
 
+// v3 Radar API implementation
+private fun addOrUpdateRasterSourceAndLayer3(
+    style: Style,
+    apiKey: String,
+    unixTime: Long
+) {
+    val sourceId = "weatherSource"
+    val layerId = "weatherLayer"
+    val tileUrl = "https://maps.openweathermap.org/maps/2.0/radar/{z}/{x}/{y}?appid=$apiKey&tm=$unixTime"
+
+    tileGetterService(style, sourceId, layerId, tileUrl)
+}
+
+/**
+ * Get the tiles and apply it to the MapView
+ */
+private fun tileGetterService(
+    style: Style,
+    sourceId: String,
+    layerId: String,
+    tileUrl: String
+) {
     if (style.styleSourceExists(sourceId)) {
         // Update the source URL if the source already exists
         val source = style.getSourceAs<RasterSource>(sourceId)
@@ -365,6 +448,7 @@ private fun addOrUpdateRasterSourceAndLayer2(
     }
 }
 
+// Formatter
 private fun formatUnixTime(unixTime: Long): String {
     return try {
         val dateTime = LocalDateTime.ofEpochSecond(unixTime, 0, ZoneOffset.UTC)

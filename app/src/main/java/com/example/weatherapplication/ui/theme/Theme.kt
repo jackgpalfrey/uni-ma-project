@@ -38,11 +38,11 @@ private val LightColorPalette = lightColorScheme(
     tertiaryContainer = Color(0xFF93687d),
     onTertiaryContainer = Color.White,
 
-    background = Color(0xFFFFFFFF),
+    // background = Color(0xFFFFFFFF),
 
-    surface = Color(0xFFfcf8ff),
+    // surface = Color(0xFFfcf8ff),
     inverseSurface = Color(0xFF313036),
-    surfaceDim = Color(0xFFdcd8e0),
+    // surfaceDim = Color(0xFFdcd8e0),
     onSurface = Color.White,
 
     error = Color(0xFF8c0009),

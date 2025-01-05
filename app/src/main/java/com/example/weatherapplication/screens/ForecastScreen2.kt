@@ -125,7 +125,7 @@ fun ForecastScreen2(
             }
             errorMessage != null -> {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Text("Error: $errorMessage", style = MaterialTheme.typography.bodyMedium)
+                    Text("$errorMessage", style = MaterialTheme.typography.bodyMedium)
                 }
             }
 
@@ -250,8 +250,8 @@ fun DaylightHoursBar(sunrise: Long, sunset: Long) {
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "Daylight Hours:",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                text = "Daylight Hours",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
