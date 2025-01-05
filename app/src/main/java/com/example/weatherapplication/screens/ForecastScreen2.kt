@@ -24,9 +24,11 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +37,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weatherapplication.api.WeatherHandler
+import com.example.weatherapplication.api.responses.AirQualityResponse
 import com.example.weatherapplication.api.responses.Forecast
 import com.example.weatherapplication.api.responses.WeatherForecastResponse
+import com.example.weatherapplication.api.responses.WeatherResponse
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
@@ -45,40 +49,38 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun ForecastScreen2(userLatitude: Double, userLongitude: Double) {
+fun ForecastScreen2(
+    weatherData: WeatherResponse,
+    airQualityData: AirQualityResponse,
+    forecastData: WeatherForecastResponse
+) {
     val coroutineScope = rememberCoroutineScope()
-    var forecastData by remember { mutableStateOf<WeatherForecastResponse?>(null) }
 
-    var isLoading by remember { mutableStateOf(true) }
+    var userLongitude by remember { mutableDoubleStateOf(weatherData.coord.lon) }
+    var userLatitude by remember { mutableDoubleStateOf(weatherData.coord.lat) }
+
+    // Remember each
+    var forecast by remember { mutableStateOf(forecastData) }
+    var currentCity by remember { mutableStateOf(weatherData.name) }
+
+    var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
-    var currentCity by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        fetchWeatherForLocation(userLatitude, userLongitude, onSuccess = {
-            forecastData = it
-            currentCity = it.city.name
-            isLoading = false
-        }, onError = {
-            errorMessage = it
-            isLoading = false
-        })
-    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Search Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // TODO: Implement Google Places API
             TextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Search for a city") },
+                placeholder = { Text("Search for places...") },
                 singleLine = true
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -86,10 +88,11 @@ fun ForecastScreen2(userLatitude: Double, userLongitude: Double) {
                 if (searchQuery.isNotBlank()) {
                     isLoading = true
                     isSearching = true
+
                     fetchWeatherByCity(
                         cityName = searchQuery,
                         onSuccess = {
-                            forecastData = it
+                            forecast = it
                             currentCity = it.city.name
                             isLoading = false
                         },
@@ -107,10 +110,10 @@ fun ForecastScreen2(userLatitude: Double, userLongitude: Double) {
         // Display current city
         if (currentCity.isNotBlank()) {
             Text(
-                text = "Weather for: $currentCity",
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                text = "Weather for $currentCity",
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.titleMedium
             )
         }
 
@@ -125,13 +128,17 @@ fun ForecastScreen2(userLatitude: Double, userLongitude: Double) {
                     Text("Error: $errorMessage", style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            forecastData != null -> {
-                val groupedForecasts = forecastData!!.list.groupBy { it.dt_txt.split(" ")[0] }.toMutableMap()
+
+            else -> {
+                val groupedForecasts = forecast.list.groupBy {
+                    it.dt_txt.split(" ")[0]
+                }.toMutableMap()
+
                 val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
                 // Ensure current day is included until midnight
                 if (!groupedForecasts.containsKey(today)) {
-                    val todayForecasts = forecastData!!.list.filter {
+                    val todayForecasts = forecast.list.filter {
                         it.dt_txt.startsWith(today)
                     }
                     if (todayForecasts.isNotEmpty()) {
@@ -140,6 +147,7 @@ fun ForecastScreen2(userLatitude: Double, userLongitude: Double) {
                 }
 
                 val days = groupedForecasts.keys.sorted()
+
                 val pagerState = rememberPagerState(
                     initialPage = 0
                 )
@@ -191,7 +199,7 @@ fun ForecastScreen2(userLatitude: Double, userLongitude: Double) {
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (days[page] == today) {
-                                val city = forecastData!!.city
+                                val city = forecast.city
                                 item {
                                     DaylightHoursBar(city.sunrise, city.sunset)
                                 }
@@ -207,31 +215,14 @@ fun ForecastScreen2(userLatitude: Double, userLongitude: Double) {
     }
 }
 
-fun fetchWeatherForLocation(
-    lat: Double,
-    lon: Double,
-    onSuccess: (WeatherForecastResponse) -> Unit,
-    onError: (String) -> Unit
-) {
-    val weatherHandler = WeatherHandler()
-
-    weatherHandler.fetchFiveDayForecast(lat, lon, object : WeatherHandler.ForecastCallback {
-        override fun onSuccess(forecastResponse: WeatherForecastResponse) {
-            onSuccess(forecastResponse)
-        }
-
-        override fun onError(errorMessage: String) {
-            onError(errorMessage)
-        }
-    })
-}
-
 fun fetchWeatherByCity(
     cityName: String,
     onSuccess: (WeatherForecastResponse) -> Unit,
     onError: (String) -> Unit
 ) {
+    // TODO: Error handling and Places API
     val weatherHandler = WeatherHandler()
+
     weatherHandler.fetchWeatherByCity(cityName, object : WeatherHandler.ForecastCallback {
         override fun onSuccess(forecastResponse: WeatherForecastResponse) {
             onSuccess(forecastResponse)
@@ -251,7 +242,7 @@ fun DaylightHoursBar(sunrise: Long, sunset: Long) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(vertical = 4.dp)
     ) {
         Column(
             modifier = Modifier

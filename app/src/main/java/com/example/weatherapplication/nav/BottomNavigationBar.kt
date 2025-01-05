@@ -74,7 +74,7 @@ fun BottomNavigationBar(weatherData: WeatherResponse, airData: AirQualityRespons
                 MapScreen(userLongitude, userLatitude, themeViewModel, isDarkMode)
             }
             composable(Views.Forecast.route) {
-                ForecastScreen2(userLatitude, userLongitude)
+                ForecastScreen2(weatherData, airData, forecastData)
             }
             composable(Views.Settings.route) {
                 SettingsScreen(
