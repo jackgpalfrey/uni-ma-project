@@ -68,6 +68,8 @@ dependencies {
     implementation("com.mapbox.maps:android:11.8.0")
     // If you're using compose also add the compose extension
     implementation("com.mapbox.extension:maps-compose:11.8.0")
+    implementation("com.google.accompanist:accompanist-pager:0.30.1")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.30.1")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")

@@ -32,6 +32,29 @@ class WeatherHandlerForecast {
         })
     }
 
+    fun fetchWeatherByCity(
+    cityName: String,
+    callback: WeatherCallback
+    ) {
+        val call = RetrofitClient.weatherService.getWeatherByCity(cityName, API_KEY)
+        call.enqueue(object : Callback<WeatherResponseForecast> {
+            override fun onResponse(
+                call: Call<WeatherResponseForecast>,
+                response: Response<WeatherResponseForecast>
+            ) {
+                if (response.isSuccessful && response.body() != null) {
+                    callback.onSuccess(response.body()!!)
+                } else {
+                    callback.onError("Error: ${response.message()}")
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherResponseForecast>, t: Throwable) {
+                callback.onError("Failure: ${t.message}")
+            }
+        })
+    }
+
     interface WeatherCallback {
         fun onSuccess(forecastResponse: WeatherResponseForecast)
         fun onError(errorMessage: String)
