@@ -12,6 +12,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -24,8 +25,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
@@ -154,6 +159,8 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, isDarkTheme: 
         Box(
             modifier = Modifier.padding(16.dp)
         ) {
+            //
+            // Dropdown Component
             DropdownWeatherComponent(
                 selectedItem = selectedItem,
                 onItemSelected = { item ->
@@ -165,18 +172,22 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, isDarkTheme: 
             )
         }
 
-        //
-        // Weather Slider
-        WeatherMapSlider(
-            initialSliderValue = 0.0f,
-            currentTimeUnix = currentTimeUnix,
-            onSelectedUnixTimeChange = { newUnixTime ->
-                selectedUnixTime = newUnixTime
-                Log.d("UnixTime", "Time $selectedUnixTime")
+        Box(
 
-                updateWeatherMapStyle()
-            },
-        )
+        ) {
+            //
+            // Weather Slider
+            WeatherMapSlider(
+                initialSliderValue = 0.0f,
+                currentTimeUnix = currentTimeUnix,
+                onSelectedUnixTimeChange = { newUnixTime ->
+                    selectedUnixTime = newUnixTime
+                    Log.d("UnixTime", "Time $selectedUnixTime")
+
+                    updateWeatherMapStyle()
+                },
+            )
+        }
 
         //
         // Rendering the MapView
@@ -221,7 +232,7 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, isDarkTheme: 
         //
         // Get the selected item code and update the view
         Column(
-            modifier = Modifier.padding(2.dp)
+            modifier = Modifier.padding(4.dp)
         ) {
             when (selectedItem.code) {
                 "temp_new" ->
@@ -233,6 +244,13 @@ fun MapWeatherScreen2(userLatitude: Double, userLongitude: Double, isDarkTheme: 
                     Log.d("GradientBox", "None available")
                 }
             }
+
+            Text(
+                text = "Data provided by openweathermap.org",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
         }
     }
 }
@@ -265,7 +283,8 @@ fun DropdownWeatherComponent(
     )
     DropdownMenu(
         expanded = expanded,
-        onDismissRequest = { expanded = false }
+        onDismissRequest = { expanded = false },
+
     ) {
         layerTypes.forEach { item ->
             DropdownMenuItem(
@@ -364,7 +383,7 @@ private fun tileGetterService(
 public fun formatUnixTime(unixTime: Long): String {
     return try {
         val dateTime = LocalDateTime.ofEpochSecond(unixTime, 0, ZoneOffset.UTC)
-        val outputFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy, hh:mm a")
+        val outputFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy hh:mm a")
         dateTime.format(outputFormatter)
     } catch (e: DateTimeParseException) {
         unixTime.toString()

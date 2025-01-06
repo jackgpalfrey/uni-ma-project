@@ -8,6 +8,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.weatherapplication.api.responses.AirQualityResponse
@@ -27,24 +29,34 @@ fun SettingsScreen(
 
     locationName = weatherData.name
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+            .padding(16.dp)
+    ) {
         val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
 
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text("Settings Screen")
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Adjust Theme")
-            Slider(
-                value = if (isDarkTheme) 1f else 0f,
-                onValueChange = { themeViewModel.setDarkTheme(it > 0.5f) },
-                valueRange = 0f..1f,
-                steps = 1,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+        Text(
+            text = "General",
+            style = MaterialTheme.typography.titleLarge
+        )
 
-            Text(if (isDarkTheme) "Dark Theme" else "Light Theme")
-        }
+        HorizontalDivider(
+            modifier = Modifier.padding(0.dp, 12.dp)
+        )
+
+        Switch(
+            modifier = Modifier.semantics { contentDescription = "Demo" }
+                .padding(0.dp, 8.dp),
+            checked = isDarkTheme,
+            onCheckedChange = { themeViewModel.setDarkTheme(it) }
+        )
+        Text(
+            modifier = Modifier.padding(0.dp),
+            text = if (isDarkTheme) "Dark Mode" else "Light Mode",
+            style = MaterialTheme.typography.bodySmall
+        )
 
         // Display user location
         Text("Location: $locationName ($userLatitude, $userLongitude)")
