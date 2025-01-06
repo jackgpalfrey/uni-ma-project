@@ -12,10 +12,8 @@ fun MapScreen(
     themeViewModel: ThemeViewModel,
     isDarkMode: Boolean
 ) {
-    val context = LocalContext.current
-
     val lat: Double = userLatitude
     val lon: Double = userLongitude
 
-    MapWeatherScreen2(lat, lon, themeViewModel, isDarkMode)
+    MapWeatherScreen2(lat, lon, isDarkMode)
 }

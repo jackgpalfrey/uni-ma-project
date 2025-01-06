@@ -1,93 +1,235 @@
 package com.example.weatherapplication.screens
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
+import com.example.weatherapplication.api.WeatherHandler
 import com.example.weatherapplication.api.responses.AirQualityResponse
 import com.example.weatherapplication.api.responses.Forecast
 import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
-/*
+import java.util.Date
+import java.util.Locale
+
 @Composable
-fun ForecastScreen(
+fun ForecastScreen2(
     weatherData: WeatherResponse,
     airQualityData: AirQualityResponse,
-    forecastData: WeatherForecastResponse,
+    forecastData: WeatherForecastResponse
 ) {
-    // TODO:    Might have to add the reload
+    val coroutineScope = rememberCoroutineScope()
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var userLongitude by remember { mutableDoubleStateOf(weatherData.coord.lon) }
+    var userLatitude by remember { mutableDoubleStateOf(weatherData.coord.lat) }
 
-    val groupedForecasts = forecastData.list.groupBy { it.dt_txt.split(" ")[0] }.toMutableMap()
-    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    // Remember each
+    var forecast by remember { mutableStateOf(forecastData) }
+    var currentCity by remember { mutableStateOf(weatherData.name) }
 
-    // Ensure current day is included until midnight
-    if (!groupedForecasts.containsKey(today)) {
-        val todayForecasts = forecastData.list.filter {
-            it.dt_txt.startsWith(today)
-        }
-        if (todayForecasts.isNotEmpty()) {
-            groupedForecasts[today] = todayForecasts
-        }
-    }
-
-    val days = groupedForecasts.keys.sorted() // Ensure proper ordering
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearching by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            days.forEachIndexed { index, day ->
-                val formattedDay = if (day == today) {
-                    "Now"
-                } else {
-                    formatDayWithDate(day)
+            // TODO: Implement Google Places API
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Search for places...") },
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = {
+                if (searchQuery.isNotBlank()) {
+                    isLoading = true
+                    isSearching = true
+
+                    fetchWeatherByCity(
+                        cityName = searchQuery,
+                        onSuccess = {
+                            forecast = it
+                            currentCity = it.city.name
+                            isLoading = false
+                        },
+                        onError = {
+                            errorMessage = it
+                            isLoading = false
+                        }
+                    )
                 }
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = {
-                        Text(
-                            formattedDay.replace(" ", "\n"),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 13.9.sp,
-                            lineHeight = 16.sp,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                )
+            }) {
+                Text("Search")
             }
         }
 
-        if (days[selectedTab] == today) {
-            val city = forecastData.city
-            DaylightHoursBar(city.sunrise, city.sunset)
+        // Display current city
+        if (currentCity.isNotBlank()) {
+            Text(
+                text = "Weather for $currentCity",
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium
+            )
         }
 
-        val forecastsForDay = groupedForecasts[days[selectedTab]] ?: emptyList()
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(forecastsForDay) { forecast ->
-                IntervalCard(forecast)
+        when {
+            isLoading -> {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    CircularProgressIndicator()
+                }
+            }
+            errorMessage != null -> {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text("$errorMessage", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
+            else -> {
+                val groupedForecasts = forecast.list.groupBy {
+                    it.dt_txt.split(" ")[0]
+                }.toMutableMap()
+
+                val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+                // Ensure current day is included until midnight
+                if (!groupedForecasts.containsKey(today)) {
+                    val todayForecasts = forecast.list.filter {
+                        it.dt_txt.startsWith(today)
+                    }
+                    if (todayForecasts.isNotEmpty()) {
+                        groupedForecasts[today] = todayForecasts
+                    }
+                }
+
+                val days = groupedForecasts.keys.sorted()
+
+                val pagerState = rememberPagerState(
+                    initialPage = 0
+                )
+
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Top Tab Bar
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        days.forEachIndexed { index, day ->
+                            val formattedDay = if (day == today) {
+                                "Today"
+                            } else {
+                                formatDayWithDate(day)
+                            }
+                            Tab(
+                                selected = pagerState.currentPage == index,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                },
+                                text = {
+                                    Text(
+                                        formattedDay.replace(" ", "\n"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontSize = 13.sp,
+                                        lineHeight = 16.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    // Pager for swiping between days
+                    HorizontalPager(
+                        count = days.size,
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        val forecastsForDay = groupedForecasts[days[page]] ?: emptyList()
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (days[page] == today) {
+                                val city = forecast.city
+                                item {
+                                    DaylightHoursBar(city.sunrise, city.sunset)
+                                }
+                            }
+                            items(forecastsForDay) { forecast ->
+                                IntervalCard(forecast)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+fun fetchWeatherByCity(
+    cityName: String,
+    onSuccess: (WeatherForecastResponse) -> Unit,
+    onError: (String) -> Unit
+) {
+    // TODO: Error handling and Places API
+    val weatherHandler = WeatherHandler()
+
+    weatherHandler.fetchWeatherByCity(cityName, object : WeatherHandler.ForecastCallback {
+        override fun onSuccess(forecastResponse: WeatherForecastResponse) {
+            onSuccess(forecastResponse)
+        }
+
+        override fun onError(errorMessage: String) {
+            onError(errorMessage)
+        }
+    })
 }
 
 @Composable
@@ -98,7 +240,7 @@ fun DaylightHoursBar(sunrise: Long, sunset: Long) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(vertical = 4.dp)
     ) {
         Column(
             modifier = Modifier
@@ -106,7 +248,7 @@ fun DaylightHoursBar(sunrise: Long, sunset: Long) {
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "Daylight Hours:",
+                text = "Daylight Hours",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -137,12 +279,12 @@ fun IntervalCard(forecast: Forecast) {
         ) {
             Text(
                 text = format24HourTime(forecast.dt_txt),
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "${forecast.main.temp}°C",
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = forecast.weather[0].main,
@@ -179,21 +321,6 @@ fun formatDayWithDate(dateString: String): String {
     }
 }
 
-fun formatDay(dateString: String): String {
-    val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val outputFormat = SimpleDateFormat("EEE", Locale.getDefault())
-    return try {
-        val date = inputFormat.parse(dateString)
-        if (date != null) {
-            outputFormat.format(date)
-        } else {
-            "Unknown"
-        }
-    } catch (e: Exception) {
-        "Invalid"
-    }
-}
-
 fun format24HourTime(dateString: String): String {
     val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     val outputFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -213,4 +340,4 @@ fun formatTimeWithoutAmPm(unixTime: Long): String {
     val date = Date(unixTime * 1000) // Convert seconds to milliseconds
     val format = SimpleDateFormat("HH:mm", Locale.getDefault())
     return format.format(date)
-}*/
+}

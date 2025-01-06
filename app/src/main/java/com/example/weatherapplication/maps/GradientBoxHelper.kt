@@ -9,10 +9,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ *
+ * Gradient Box Helpers
+ */
 @Composable
 fun TemperatureGradientBox() {
     // Define the gradient colors
@@ -45,7 +48,6 @@ fun TemperatureGradientBox() {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -55,7 +57,7 @@ fun TemperatureGradientBox() {
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(20.dp)
+                    .height(8.dp)
                     .background(gradientBrush)
             )
         }
@@ -70,7 +72,7 @@ fun TemperatureGradientBox() {
                 Text(
                     text = temperature,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 12.sp
+                    fontSize = 10.sp
                 )
             }
         }
@@ -78,9 +80,9 @@ fun TemperatureGradientBox() {
         // Accompanying Text
         Text(
             text = "Temperature",
-            style = MaterialTheme.typography.bodyMedium,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(top = 8.dp)
+            style = MaterialTheme.typography.bodySmall,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 0.dp, bottom = 4.dp)
         )
     }
 }
@@ -113,7 +115,6 @@ fun PrecipitationGradientBox() {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -123,7 +124,7 @@ fun PrecipitationGradientBox() {
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(20.dp)
+                    .height(8.dp)
                     .background(gradientBrush)
             )
         }
@@ -146,9 +147,65 @@ fun PrecipitationGradientBox() {
         // Accompanying Text
         Text(
             text = "Precipitation mm/h",
-            style = MaterialTheme.typography.bodyMedium,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(top = 8.dp)
+            style = MaterialTheme.typography.bodySmall,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 0.dp, bottom = 4.dp)
+        )
+    }
+}
+
+@Composable
+fun GradientBox() {
+    // Define the gradient colors
+    val gradientColors = listOf(
+        Color(0xFFFEF9CA).copy(alpha = 0.6f),
+        Color(0xFFF44336).copy(alpha = 0.6f),
+    )
+
+    // Create the linear gradient brush
+    val gradientBrush = Brush.linearGradient(
+        colors = gradientColors
+    )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Gradient Box
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(8.dp)
+                    .background(gradientBrush)
+            )
+        }
+
+        // Temperature Scale
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            val rainfall = listOf("0", "25", "50", "100")
+            rainfall.forEach { mm ->
+                Text(
+                    text = mm,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 10.sp
+                )
+            }
+        }
+
+        // Accompanying Text
+        Text(
+            text = "None n/a",
+            style = MaterialTheme.typography.bodySmall,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 0.dp, bottom = 4.dp)
         )
     }
 }
