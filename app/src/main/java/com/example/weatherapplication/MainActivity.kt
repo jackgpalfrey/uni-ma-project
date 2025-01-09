@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -52,7 +53,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+            val isDarkTheme by themeViewModel.isDarkTheme.collectAsState(initial = true)
+
 
             MyAppTheme(darkTheme = isDarkTheme) {
                 MainApp(themeViewModel, isDarkTheme)
@@ -77,6 +79,14 @@ fun MainApp(themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
     var weatherData: WeatherResponse? by remember { mutableStateOf(null) }
     var airData: AirQualityResponse? by remember { mutableStateOf(null) }
     var forecastData: WeatherForecastResponse? by remember { mutableStateOf(null) }
+
+    // Set theme based on system default while still allowing for toggle
+    // FIXME: If anyone has a nicer solution to this please do it, this hurts my soul to write
+    var themeSet: Boolean by remember { mutableStateOf(false) }
+    if (!themeSet){
+        themeViewModel.setDarkTheme(isSystemInDarkTheme())
+        themeSet = true
+    }
 
     // Function to fetch weather
     fun fetchWeatherData(lat: Double, long: Double) {
