@@ -39,6 +39,9 @@ import com.example.weatherapplication.api.responses.AirQualityResponse
 import com.example.weatherapplication.api.responses.Forecast
 import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
+import com.example.weatherapplication.common.format24hTimeFromDatetimeText
+import com.example.weatherapplication.common.format24hTimeFromTimestamp
+import com.example.weatherapplication.common.formatDayWithDateFromDateText
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
@@ -54,8 +57,6 @@ fun ForecastScreen2(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    var userLongitude by remember { mutableDoubleStateOf(weatherData.coord.lon) }
-    var userLatitude by remember { mutableDoubleStateOf(weatherData.coord.lat) }
 
     // Remember each
     var forecast by remember { mutableStateOf(forecastData) }
@@ -87,7 +88,7 @@ fun ForecastScreen2(
                     isLoading = true
                     isSearching = true
 
-                    fetchWeatherByCity(
+                    fetchForecastByCity(
                         cityName = searchQuery,
                         onSuccess = {
                             forecast = it
@@ -99,9 +100,16 @@ fun ForecastScreen2(
                             isLoading = false
                         }
                     )
-                }
+                } else {
+                    forecast = forecastData
+                    currentCity = weatherData.name
+            }
             }) {
-                Text("Search")
+                if (searchQuery.isNotBlank()) {
+                    Text("Search")
+                } else {
+                    Text("Current")
+                }
             }
         }
 
@@ -160,7 +168,7 @@ fun ForecastScreen2(
                             val formattedDay = if (day == today) {
                                 "Today"
                             } else {
-                                formatDayWithDate(day)
+                                formatDayWithDateFromDateText(day)
                             }
                             Tab(
                                 selected = pagerState.currentPage == index,
@@ -213,7 +221,7 @@ fun ForecastScreen2(
     }
 }
 
-fun fetchWeatherByCity(
+private fun fetchForecastByCity(
     cityName: String,
     onSuccess: (WeatherForecastResponse) -> Unit,
     onError: (String) -> Unit
@@ -221,7 +229,7 @@ fun fetchWeatherByCity(
     // TODO: Error handling and Places API
     val weatherHandler = WeatherHandler()
 
-    weatherHandler.fetchWeatherByCity(cityName, object : WeatherHandler.ForecastCallback {
+    weatherHandler.fetchForecastByCity(cityName, object : WeatherHandler.ForecastCallback {
         override fun onSuccess(forecastResponse: WeatherForecastResponse) {
             onSuccess(forecastResponse)
         }
@@ -234,8 +242,8 @@ fun fetchWeatherByCity(
 
 @Composable
 fun DaylightHoursBar(sunrise: Long, sunset: Long) {
-    val sunriseTime = formatTimeWithoutAmPm(sunrise)
-    val sunsetTime = formatTimeWithoutAmPm(sunset)
+    val sunriseTime = format24hTimeFromTimestamp(sunrise)
+    val sunsetTime = format24hTimeFromTimestamp(sunset)
 
     Card(
         modifier = Modifier
@@ -278,7 +286,7 @@ fun IntervalCard(forecast: Forecast) {
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = format24HourTime(forecast.dt_txt),
+                text = format24hTimeFromDatetimeText(forecast.dt_txt),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -306,38 +314,4 @@ fun IntervalCard(forecast: Forecast) {
     }
 }
 
-fun formatDayWithDate(dateString: String): String {
-    val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val outputFormat = SimpleDateFormat("EEE d/M", Locale.getDefault())
-    return try {
-        val date = inputFormat.parse(dateString)
-        if (date != null) {
-            outputFormat.format(date)
-        } else {
-            "Unknown"
-        }
-    } catch (e: Exception) {
-        "Invalid"
-    }
-}
 
-fun format24HourTime(dateString: String): String {
-    val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-    val outputFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    return try {
-        val date = inputFormat.parse(dateString)
-        if (date != null) {
-            outputFormat.format(date)
-        } else {
-            "Unknown"
-        }
-    } catch (e: Exception) {
-        "Invalid"
-    }
-}
-
-fun formatTimeWithoutAmPm(unixTime: Long): String {
-    val date = Date(unixTime * 1000) // Convert seconds to milliseconds
-    val format = SimpleDateFormat("HH:mm", Locale.getDefault())
-    return format.format(date)
-}

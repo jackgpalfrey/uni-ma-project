@@ -102,7 +102,7 @@ fun MainApp(themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
 
                 // Fetch weather
                 weatherHandler.fetchWeather(lat, long, object : WeatherHandler.WeatherCallback {
-                    override fun onSuccess(weatherResponse: WeatherResponse?) {
+                    override fun onSuccess(weatherResponse: WeatherResponse) {
                         weatherData = weatherResponse
                         
                         // After weather success, fetch air quality

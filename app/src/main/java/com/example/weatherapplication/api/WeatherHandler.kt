@@ -1,6 +1,7 @@
 package com.example.weatherapplication.api
 
 import com.example.weatherapplication.api.responses.AirQualityResponse
+import com.example.weatherapplication.api.responses.Weather
 import com.example.weatherapplication.api.responses.WeatherForecastResponse
 import com.example.weatherapplication.api.responses.WeatherResponse
 import retrofit2.Call
@@ -91,12 +92,12 @@ class WeatherHandler {
         })
     }
 
-    // Fetch weather by city
-    fun fetchWeatherByCity(
+    // Fetch forecast by city
+    fun fetchForecastByCity(
         cityName: String,
         callback: ForecastCallback
     ) {
-        val call = RetrofitClient.weatherService.getWeatherByCity(cityName, API_KEY)
+        val call = RetrofitClient.weatherService.getForecastByCity(cityName, API_KEY)
         call.enqueue(object : Callback<WeatherForecastResponse> {
             override fun onResponse(
                 call: Call<WeatherForecastResponse>,
@@ -115,8 +116,32 @@ class WeatherHandler {
         })
     }
 
+    // Fetch forecast by city
+    fun fetchWeatherByCity(
+        cityName: String,
+        callback: WeatherCallback
+    ) {
+        val call = RetrofitClient.weatherService.getWeatherByCity(cityName, API_KEY)
+        call.enqueue(object : Callback<WeatherResponse> {
+            override fun onResponse(
+                call: Call<WeatherResponse>,
+                response: Response<WeatherResponse>
+            ) {
+                if (response.isSuccessful && response.body() != null) {
+                    callback.onSuccess(response.body()!!)
+                } else {
+                    callback.onError("Error: ${response.message()}")
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
+                callback.onError("Failure: ${t.message}")
+            }
+        })
+    }
+
     interface WeatherCallback {
-        fun onSuccess(weatherResponse: WeatherResponse?)
+        fun onSuccess(weatherResponse: WeatherResponse)
         fun onError(errorMessage: String)
     }
 

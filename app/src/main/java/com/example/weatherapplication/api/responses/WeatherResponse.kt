@@ -8,6 +8,7 @@ data class WeatherResponse(
     val visibility: Int,
     val wind: Wind,
     val rain: Rain?,
+    val snow: Int?,
     val clouds: Clouds,
     val dt: Long,
     val sys: Sys,

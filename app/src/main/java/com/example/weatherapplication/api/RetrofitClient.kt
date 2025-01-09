@@ -48,9 +48,16 @@ interface WeatherService {
     ): Call<WeatherForecastResponse>
 
     @GET("data/2.5/forecast")
-    fun getWeatherByCity(
+    fun getForecastByCity(
         @Query("q") cityName: String,
         @Query("appid") apiKey: String,
         @Query("units") units: String = "metric"
     ): Call<WeatherForecastResponse>
+
+    @GET("data/2.5/weather")
+    fun getWeatherByCity(
+        @Query("q") cityName: String,
+        @Query("appid") apiKey: String,
+        @Query("units") units: String = "metric",
+    ): Call<WeatherResponse>
 }
