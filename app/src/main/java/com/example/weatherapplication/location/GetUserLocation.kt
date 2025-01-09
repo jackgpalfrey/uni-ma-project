@@ -41,7 +41,13 @@ fun GetUserLocation(context: Context, onLocationAvailable: (Double, Double) -> U
                         // Call the callback function with the retrieved latitude and longitude
                         onLocationAvailable(userLatitude, userLongitude)
                     } else {
-                        Log.d("UserLocation", "Location is null")
+                        val userLatitude = 30.046080 // UWE Campus Bristol
+                        val userLongitude = -33.018660
+
+                        onLocationAvailable(userLatitude, userLongitude)
+
+                        Log.d("UserLocation", "Cannot find UserLocation using Mobile GPS null")
+                        Log.d("UserLocation", "Setting Default location to UWE Campus")
                     }
                 }
             } else {

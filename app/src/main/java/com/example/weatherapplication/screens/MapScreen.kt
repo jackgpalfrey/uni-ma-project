@@ -1,11 +1,19 @@
 package com.example.weatherapplication.screens
 
 import androidx.compose.runtime.Composable
-import com.example.weatherapplication.maps.SimpleMap
+import androidx.compose.ui.platform.LocalContext
+import com.example.weatherapplication.maps.MapWeatherScreen2
+import com.example.weatherapplication.ui.theme.ThemeViewModel
 
 @Composable
-fun MapScreen(userLatitude: Double, userLongitude: Double) {
+fun MapScreen(
+    userLatitude: Double,
+    userLongitude: Double,
+    themeViewModel: ThemeViewModel,
+    isDarkMode: Boolean
+) {
     val lat: Double = userLatitude
     val lon: Double = userLongitude
-    SimpleMap(lat, lon)
+
+    MapWeatherScreen2(lat, lon, isDarkMode)
 }

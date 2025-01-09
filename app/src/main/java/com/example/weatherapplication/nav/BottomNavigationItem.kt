@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.weatherapplication.Views
 
@@ -28,6 +29,11 @@ data class BottomNavigationItem(
                 label = "Forecast",
                 icon = Icons.Filled.DateRange,
                 route = Views.Forecast.route
+            ),
+            BottomNavigationItem(
+                label = "Settings",
+                icon = Icons.Filled.Settings,
+                route = Views.Settings.route
             ),
         )
     }
