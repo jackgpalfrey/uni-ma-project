@@ -81,7 +81,6 @@ fun MainApp(themeViewModel: ThemeViewModel, isDarkTheme: Boolean) {
     var forecastData: WeatherForecastResponse? by remember { mutableStateOf(null) }
 
     // Set theme based on system default while still allowing for toggle
-    // FIXME: If anyone has a nicer solution to this please do it, this hurts my soul to write
     var themeSet: Boolean by remember { mutableStateOf(false) }
     if (!themeSet){
         themeViewModel.setDarkTheme(isSystemInDarkTheme())
